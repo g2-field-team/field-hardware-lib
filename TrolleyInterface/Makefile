@@ -28,6 +28,10 @@ $(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o $(LIB_DIR)/libTrolleyInterface.so
 	$(CXX) -o $@ $< $(CFLAGS) $(LIBFLAGS)
 
 .PHONY: clean
+.PHONY: install
 
 clean:
 	rm $(BUILD_DIR)/* $(BIN_DIR)/* $(LIB_DIR)/*
+
+install:
+	ln -s $(LIB_DIR)/libTrolleyInterface.so ../libs/libTrolleyInterface.so
