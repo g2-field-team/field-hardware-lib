@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string>
 #include <iostream>
+#include <string.h>
 
 #include "TrolleyInterface.h"
 //#include <tcpsupp.h>

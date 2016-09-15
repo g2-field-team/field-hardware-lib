@@ -10,6 +10,7 @@
 //C++ includes
 #include <iostream>
 #include <string>
+#include <strings.h>
 
 #include "TCPDrivers.h"
 
