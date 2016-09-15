@@ -1,7 +1,9 @@
 #include <iostream>
-#include "Device.h"
+#include "TrolleyInterface.h"
 
 using namespace std;
+using namespace TrolleyInterface;
+
 int main(){
   int err = DeviceConnect("192.168.1.123");
   cout <<err<<endl;

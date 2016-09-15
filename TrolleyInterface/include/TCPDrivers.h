@@ -11,6 +11,31 @@
 #include <stdlib.h>
 
 namespace TCPDrivers{
+  enum TCPError {
+    kTCP_NoError,
+    kTCP_UnableToRegisterService,
+    kTCP_UnableToEstablishConnection,
+    kTCP_ExistingServer,
+    kTCP_FailedToConnect,
+    kTCP_ServerNotRegistered,
+    kTCP_TooManyConnections,
+    kTCP_ReadFailed,
+    kTCP_WriteFailed,
+    kTCP_InvalidParameter,
+    kTCP_OutOfMemory,
+    kTCP_TimeOutErr,
+    kTCP_NoConnectionEstablished,
+    kTCP_GeneralIOErr,
+    kTCP_ConnectionClosed,
+    kTCP_UnableToLoadWinsockDLL,
+    kTCP_IncorrectWinsockDLLVersion,
+    kTCP_NetworkSubsystemNotReady,
+    kTCP_ConnectionsStillOpen,
+    kTCP_DisconnectPending,
+    kTCP_InfoNotAvailable,
+    kTCP_HostAddressNotFound
+  };
+
 
 //Define tcpFuncPtr
 typedef int (*tcpFuncPtr)(unsigned, int, int, void *);
