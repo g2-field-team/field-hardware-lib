@@ -1,23 +1,33 @@
 CXX=g++
-DEPS=TCPDrivers.h Device.h
-INCLUDEDIR=./
-CFLAGS=-I$(INCLUDEDIR)
+SRC_DIR = ./src
+INC_DIR = ./include
+LIB_DIR = ./lib
+BUILD_DIR = ./build
+BIN_DIR = ./bin
 
-all: TestComm TCPDrivers.o Device.o
+DEPS=$(INC_DIR)/TCPDrivers.h $(INC_DIR)/Device.h
+CFLAGS = -I$(INC_DIR)
+LIBFLAGS = -L$(LIB_DIR) -lTrolleyInterface
 
-TCPDrivers.o: TCPDrivers.cxx TCPDrivers.h
-	$(CXX) -o $@ -c $< $(CFLAGS)
+all: $(BIN_DIR)/TestComm $(LIB_DIR)/libTrolleyInterface.so
 
-Device.o: Device.cxx $(DEPS)
-	$(CXX) -o $@ -c $< $(CFLAGS)
 
-TestComm.o: TestComm.cxx $(DEPS)
-	$(CXX) -o $@ -c $< $(CFLAGS)
+$(LIB_DIR)/libTrolleyInterface.so: $(BUILD_DIR)/TCPDrivers.o $(BUILD_DIR)/Device.o
+	$(CXX) -shared -fPIC -o $@ $^ 
 
-TestComm: TestComm.o Device.o TCPDrivers.o
-	$(CXX) -o $@ $^ $(CFLAGS)
+$(BUILD_DIR)/TCPDrivers.o: $(SRC_DIR)/TCPDrivers.cxx $(DEPS)
+	$(CXX) -o $@ -fPIC -c $< $(CFLAGS)
+
+$(BUILD_DIR)/Device.o: $(SRC_DIR)/Device.cxx $(DEPS)
+	$(CXX) -o $@ -fPIC -c $< $(CFLAGS)
+
+$(BUILD_DIR)/TestComm.o: $(SRC_DIR)/TestComm.cxx $(DEPS)
+	$(CXX) -o $@ -fPIC -c $< $(CFLAGS)
+
+$(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o $(LIB_DIR)/libTrolleyInterface.so
+	$(CXX) -o $@ $< $(CFLAGS) $(LIBFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm *.o
+	rm $(BUILD_DIR)/* $(BIN_DIR)/* $(LIB_DIR)/*
