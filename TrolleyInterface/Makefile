@@ -34,4 +34,6 @@ clean:
 	rm $(BUILD_DIR)/* $(BIN_DIR)/* $(LIB_DIR)/*
 
 install:
+	rm ../libs/* ../includes/*
 	ln -s $(LIB_DIR)/libTrolleyInterface.so ../libs/libTrolleyInterface.so
+	ln -s $(INC_DIR)/TrolleyInterface.h ../includes/TrolleyInterface.h
