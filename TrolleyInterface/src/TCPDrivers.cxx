@@ -36,7 +36,7 @@ int ConnectToTCPServer(unsigned int *conversationHandle, unsigned int portNumber
   if (sockfd < 0){
     error("ERROR opening socket");
     *conversationHandle=0;
-    return -1;
+    return kTCP_UnableToEstablishConnection;
   }
 
   fcntl(sockfd, F_SETFL, O_NONBLOCK);
@@ -44,7 +44,7 @@ int ConnectToTCPServer(unsigned int *conversationHandle, unsigned int portNumber
   if (server == NULL) {
     fprintf(stderr,"ERROR, no such host\n");
     *conversationHandle=0;
-    return -2;
+    return kTCP_ServerNotRegistered;
   }
   bzero((char *) &serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
@@ -76,14 +76,14 @@ int ConnectToTCPServer(unsigned int *conversationHandle, unsigned int portNumber
       error("ERROR connecting");
       fprintf(stderr,"error number %d\n",so_error);
       *conversationHandle=0;
-      return -3;
+      return kTCP_FailedToConnect;
     }
   }else if (rc==0){
     printf("Connect time out: %d ms.\n",timeOut);
     *conversationHandle=0;
-    return -11;
+    return kTCP_TimeOutErr;
   }
-  return 0;
+  return kTCP_NoError;
 }
 
 //Disconnect from TCP server
@@ -91,7 +91,7 @@ int DisconnectFromTCPServer (unsigned int conversationHandle)
 {
   close(conversationHandle);
   cout << "Disconnected from TCP server."<<endl;
-  return 0;
+  return kTCP_NoError;
 }
 
 //Read from TCP server
@@ -113,16 +113,16 @@ int ClientTCPRead (unsigned int conversationHandle, void *dataBuffer, size_t dat
     getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &so_error, &len);
     if (so_error != 0) {
       printf("error number %d\n",so_error);
-      return -2;
+      return kTCP_FailedToConnect;
     }
   }else if (rc==0){
     printf("Read time out: %d ms.\n",timeOut);
-    return -11;
+    return kTCP_TimeOutErr;
   }
   int n_read = read(sockfd,dataBuffer,dataSize);
   if (n_read < 0){
     error("ERROR reading from socket");
-    return -1;
+    return kTCP_ReadFailed;
   }
  // printf("%s\n",buffer);
   return n_read;
@@ -147,16 +147,16 @@ int ClientTCPWrite (unsigned int conversationHandle, void *dataPointer, int data
     getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &so_error, &len);
     if (so_error != 0) {
       printf("error number %d\n",so_error);
-      return -2;
+      return kTCP_FailedToConnect;
     }
   }else if (rc==0){
     printf("Write time out: %d ms.\n",timeOut);
-    return -11;
+    return kTCP_TimeOutErr;
   }
   int n_written = write(sockfd,dataPointer,dataSize);
   if (n_written < 0){
-    error("ERROR reading from socket");
-    return -1;
+    error("ERROR writing to socket");
+    return kTCP_WriteFailed;
   }
   return n_written;
 }

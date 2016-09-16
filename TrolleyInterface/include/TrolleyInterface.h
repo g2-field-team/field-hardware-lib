@@ -1,14 +1,14 @@
 //==============================================================================
 //
-// Title:		Device.h
+// Title:		TrolleyInterface.h
 // Description:	This module contains the software for communicating with the
-//				LBNE Digitizer.  It will support two connection types:
+//				gm2 trolley Digitizer.  It will support two connection types:
 //				1)	The FTDI FT2232H_mini_module is a dual USB device with a
 //					serial port for the control path and FIFO for the data path.
 //				2)	A gigabit Ethernet link is also available to provide control
 //					and data paths over UDP.  Initially, this method will not be
 //					used.
-// Author:		Andrew Kreps
+// Author:		Andrew Kreps, Ran Hong
 //
 //==============================================================================
 
