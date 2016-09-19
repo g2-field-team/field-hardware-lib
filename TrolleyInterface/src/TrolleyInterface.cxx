@@ -44,11 +44,11 @@ namespace TrolleyInterface{
   unsigned int tcpDataTimeout 			= 5000;
 
   // Data Path Variables
-  int		dataSynced		= 0;
+  int dataSynced = 0;
 
   // For diagnostics only
   //DWORD	dataLost		= 0;
-  int	dataLost		= 0;
+  int dataLost = 0;
 
 
   //==============================================================================
@@ -137,18 +137,18 @@ namespace TrolleyInterface{
   // This is the software's data interface function to the TCP/IP driver.
   int DataReceive (void* data)
   {
-    int		error			= errorUnknown;
-    int		rxStatus		= 0;
-    size_t	dataExpected	= 0;
-    size_t	dataReceived	= 0;
-    size_t	packetLength	= 0;
-    size_t	payloadLength	= 0;
+    int error = errorUnknown;
+    int	rxStatus = 0;
+    size_t dataExpected	= 0;
+    size_t dataReceived	= 0;
+    size_t packetLength	= 0;
+    size_t payloadLength = 0;
 
-    dataReceived	= 0;
+    dataReceive = 0;
 
     do /* data collection loop */
     {
-      dataSynced		= 1;	// Initially assume that the data is aligned.  This will be tested, so it's fine if it is not/
+      dataSynced = 1;	// Initially assume that the data is aligned.  This will be tested, so it's fine if it is not/
       // When collecting multiple events only the first call will likely not be synced, and it is
       // faster to test for the synced condition than to always assume resynchronize is necessary.
       do /* sync check loop */
