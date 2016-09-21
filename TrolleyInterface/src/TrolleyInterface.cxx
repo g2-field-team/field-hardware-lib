@@ -44,7 +44,18 @@ namespace TrolleyInterface{
   unsigned int tcpDataTimeout 			= 5000;
 
   // Data Path Variables
-  int dataSynced = 0;
+  //  int dataSynced = 0;
+  typedef enum _DATA_SYNC_STATE
+  {
+    DSS_WORD_8000_BYTE_0_TEST,
+    DSS_WORD_8000_BYTE_1_TEST,
+    DSS_WORD_TEST,
+    DSS_WORD_7FFF,
+    DSS_WORD_8000,
+    DSS_WORD_AAAA,
+    DSS_WORD_SUCCESS
+  } DATA_SYNC_STATE;
+  DATA_SYNC_STATE data_sync_state = DSS_WORD_7FFF;
 
   // For diagnostics only
   //DWORD	dataLost		= 0;
@@ -92,6 +103,9 @@ namespace TrolleyInterface{
        ClientTCPRead(tcpDataHandle,inbuffer,256,5000);
        cout << inbuffer<<endl;
      */
+
+    // Set the event data interface to Ethernet
+    DeviceWrite(trolleyReg.eventDataInterfaceSelect, 0x00000001);
     return errorNoError;
   }
 
@@ -137,78 +151,171 @@ namespace TrolleyInterface{
   // This is the software's data interface function to the TCP/IP driver.
   int DataReceive (void* data)
   {
-    int error = errorUnknown;
+    int	error	 = errorUnknown;
     int	rxStatus = 0;
-    size_t dataExpected	= 0;
-    size_t dataReceived	= 0;
-    size_t packetLength	= 0;
-    size_t payloadLength = 0;
+    unsigned int dataExpected	= 0;
+    unsigned int dataReceived	= 0;
+    unsigned int packetLength	= 0;
+    unsigned int payloadLength	= 0;
+    unsigned short int preable_sync_buffer = 0;
 
-    dataReceive = 0;
+    dataReceived = 0;
 
-    do /* data collection loop */
+    data_sync_state = DSS_WORD_TEST;	// Initially assume that the data is aligned, at the word level.  Then check for the
+    // the preamble sequence.  If it is not detected revert to byte-wise alignment.
+    do /* sync check loop */
     {
-      dataSynced = 1;	// Initially assume that the data is aligned.  This will be tested, so it's fine if it is not/
-      // When collecting multiple events only the first call will likely not be synced, and it is
-      // faster to test for the synced condition than to always assume resynchronize is necessary.
-      do /* sync check loop */
+      if((data_sync_state == DSS_WORD_8000_BYTE_0_TEST) || (data_sync_state == DSS_WORD_8000_BYTE_1_TEST))
       {
-	if (dataSynced == 1)
-	{
-	  // If data is synchronized, try to read the first to header words in order to determine the total packet length.
-	  dataExpected = 2 * sizeof(unsigned int) - dataReceived;
-	}
-	else
-	{
-	  // else read one byte at a time until resynchronized to the stream
-	  dataExpected = 1 * sizeof(unsigned char);
-	}
+	dataExpected = sizeof(unsigned char);
+      }
+      else
+      {
+	dataExpected = sizeof(unsigned short int);
+      }
 
-	// Grab the data from the TCP driver
-	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
-	error = ClientTCPRead_ErrorCheck(rxStatus);
-	if (error != errorNoError) break;
+      // Grab the data from the TCP driver
+      rxStatus = ClientTCPRead(tcpDataHandle, &preable_sync_buffer, dataExpected, tcpDataTimeout);
+      error = ClientTCPRead_ErrorCheck(rxStatus);
+      if (error != errorNoError) break;
 
-	dataReceived += rxStatus;
-	dataExpected -= rxStatus;
+      dataReceived += rxStatus;
+      dataExpected -= rxStatus;
 
-	// check if we received all the expected data
-	if (dataExpected == 0)
+      // check if we received all the expected data
+      if (dataExpected == 0)
+      {
+	switch (data_sync_state)
 	{
-	  if (dataSynced == 1)
-	  {
-	    // Verify if synchronized to data stream
-	    if (((unsigned int*)data)[0] != 0xAAAAAAAA) 
+	  // Check for the first byte of the first preamble word. "7F(FF)"
+	  case DSS_WORD_8000_BYTE_0_TEST:
+	    if ((preable_sync_buffer & 0x00FF) == 0x0000)
 	    {
-	      dataSynced = 0;
-	      // Throw this data away and increment lost data count
-	      dataLost += dataReceived;
-	      dataReceived = 0;
+	      data_sync_state = DSS_WORD_8000_BYTE_1_TEST;
 	    }
-	  }
-	  else
-	  {
-	    if (((unsigned char*)data)[dataReceived - 1] != 0xAA)
+	    else
 	    {
 	      // last byte was not part of the expected start of header word.
 	      // reset receive data count
 	      dataLost += dataReceived;
 	      dataReceived = 0;
 	    }
-	    else if (dataReceived == 1 * sizeof(unsigned int))
+	    break;
+
+	  case DSS_WORD_8000_BYTE_1_TEST:
+	    if ((preable_sync_buffer & 0x00FF) == 0x0080)
 	    {
-	      dataSynced = 1;
+	      // possible word alignment found
+	      data_sync_state = DSS_WORD_7FFF;
 	    }
-	  }
+	    else
+	    {
+	      data_sync_state = DSS_WORD_8000_BYTE_0_TEST;
+	      // last byte was not part of the expected start of header word.
+	      // reset receive data count
+	      dataLost += dataReceived;
+	      dataReceived = 0;
+	    }
+	    break;
+
+	  case DSS_WORD_TEST:
+	    if (preable_sync_buffer == 0x7FFF)
+	    {
+	      data_sync_state = DSS_WORD_8000;
+	    }
+	    else if (preable_sync_buffer == 0x8000)
+	    {
+	      data_sync_state = DSS_WORD_7FFF;
+	    }
+	    else
+	    {
+	      data_sync_state = DSS_WORD_8000_BYTE_0_TEST;
+	      // Throw this data away and increment lost data count
+	      dataLost += dataReceived;
+	      dataReceived = 0;
+	    }
+	    break;
+
+	  case DSS_WORD_7FFF:
+	    if (preable_sync_buffer == 0x7FFF)
+	    {
+	      data_sync_state = DSS_WORD_8000;
+	    }
+	    else
+	    {
+	      data_sync_state = DSS_WORD_8000_BYTE_0_TEST;
+	      // Throw this data away and increment lost data count
+	      dataLost += dataReceived;
+	      dataReceived = 0;
+	    }
+	    break;
+
+	  case DSS_WORD_8000:
+	    if (preable_sync_buffer == 0x8000)
+	    {
+	      data_sync_state = DSS_WORD_AAAA;
+	    }
+	    else
+	    {
+	      data_sync_state = DSS_WORD_8000_BYTE_0_TEST;
+	      // Throw this data away and increment lost data count
+	      dataLost += dataReceived;
+	      dataReceived = 0;
+	    }
+	    break;
+
+	  case DSS_WORD_AAAA:
+	    if (preable_sync_buffer == 0xAAAA)
+	    {
+	      data_sync_state = DSS_WORD_SUCCESS;
+	    }
+	    else if (preable_sync_buffer == 0x7FFF)
+	    {
+	      data_sync_state = DSS_WORD_8000;
+	    }
+	    else
+	    {
+	      data_sync_state = DSS_WORD_8000_BYTE_0_TEST;
+	      // Throw this data away and increment lost data count
+	      dataLost += dataReceived;
+	      dataReceived = 0;
+	    }
+	    break;
+
+	  default:
+	    error = errorUnknown; 
+	    break;
 	}
-      } while((error == errorNoError) && (dataSynced == 0));
-    } while ((error == errorNoError) && (dataExpected != 0));
+      }
+    } while((error == errorNoError) && (data_sync_state != DSS_WORD_SUCCESS));
 
     if (error) return error;
 
+    ((unsigned short int*)data)[0] = 0x7FFF;
+    ((unsigned short int*)data)[1] = 0x8000;
+    ((unsigned short int*)data)[2] = 0x7FFF;
+    ((unsigned short int*)data)[3] = 0x8000;
+    ((unsigned short int*)data)[4] = 0x7FFF;
+    ((unsigned short int*)data)[5] = 0x8000;
+    ((unsigned short int*)data)[6] = 0xAAAA;
+
+    dataReceived = 7 * sizeof(unsigned short);
+
     // Calculate the event packet payload size
 
-    packetLength	= ((unsigned int*)data)[1] * sizeof(unsigned int);
+    // Fetch Event Packet Length
+    dataExpected = sizeof(unsigned int);
+    do
+    {
+      rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
+      error = ClientTCPRead_ErrorCheck(rxStatus);
+      if (error != errorNoError) break;
+
+      dataReceived += rxStatus; 
+      dataExpected -= rxStatus;
+    } while(dataExpected != 0);
+
+    packetLength	= (*((unsigned int*)(&(((unsigned short int*)data)[7])))) * sizeof(unsigned char);
     payloadLength	= packetLength - EVENT_HEADER_SIZE;
 
     // Basic check of header data values
@@ -523,24 +630,24 @@ namespace TrolleyInterface{
     // NOTE: All comments about default values, read masks, and write masks are current as of 2/11/2014
 
     // Registers in the Zynq ARM		Address				Address		Default Value	Read Mask		Write Mask		Code Name
-    trolleyReg.comm_arm_fw_build		= 0x00000010;
-    trolleyReg.IP4Address				= 0x00000100;
-    trolleyReg.IP4Netmask				= 0x00000104;
-    trolleyReg.IP4Gateway				= 0x00000108;
-    trolleyReg.MACAddressLSB			= 0x00000110;
-    trolleyReg.MACAddressMSB			= 0x00000114;
-    trolleyReg.EthernetReset			= 0x00000180;
-    trolleyReg.RestoreSelect			= 0x00000200;
-    trolleyReg.Restore					= 0x00000204;
-    trolleyReg.PurgeDDR					= 0x00000300;
-    trolleyReg.TCPSendBlockSize			= 0x00000400;
+    trolleyReg.comm_arm_fw_build = 0x00000010;
+    trolleyReg.IP4Address	 = 0x00000100;
+    trolleyReg.IP4Netmask	 = 0x00000104;
+    trolleyReg.IP4Gateway	 = 0x00000108;
+    trolleyReg.MACAddressLSB	 = 0x00000110;
+    trolleyReg.MACAddressMSB	 = 0x00000114;
+    trolleyReg.EthernetReset	 = 0x00000180;
+    trolleyReg.RestoreSelect	 = 0x00000200;
+    trolleyReg.Restore		 = 0x00000204;
+    trolleyReg.PurgeDDR		 = 0x00000300;
+    trolleyReg.TCPSendBlockSize	 = 0x00000400;
 
 
     // Registers in the Zynq FPGA		Address				Address		Default Value	Read Mask		Write Mask		VHDL Name
-    trolleyReg.comm_fpga_fw_build		= 0x40000010;   //	X"010",		X"00000001",	X"FFFFFFFF",	X"00000000",
+    trolleyReg.comm_fpga_fw_build 	= 0x40000010;   //	X"010",		X"00000001",	X"FFFFFFFF",	X"00000000",
     trolleyReg.eventDataInterfaceSelect	= 0x40000020;	//	X"020",		X"00000000",	X"00000001",	X"00000001",	 
-    trolleyReg.eventDataControl			= 0x40000144;	//	X"144",		X"0020001F",	X"FFFFFFFF",	X"0033001F",	reg_event_data_control
-    trolleyReg.eventDataStatus			= 0x40000190;	//	X"190",		X"00000000",	X"FFFFFFFF",	X"00000000",	regin_event_data_status
+    trolleyReg.eventDataControl		= 0x40000144;	//	X"144",		X"0020001F",	X"FFFFFFFF",	X"0033001F",	reg_event_data_control
+    trolleyReg.eventDataStatus		= 0x40000190;	//	X"190",		X"00000000",	X"FFFFFFFF",	X"00000000",	regin_event_data_status
   }
 
 }//End namespace Trolley Interface

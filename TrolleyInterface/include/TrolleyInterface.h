@@ -19,9 +19,12 @@
 // Constants
 //==============================================================================
 
-#define EVENT_HEADER_SIZE	0
-#define MAX_PAYLOAD_DATA	0x400000000
-#define MAX_CTRL_DATA 256
+#define EVENT_HEADER_SIZE	0x80
+#define MAX_PAYLOAD_DATA	0x100000
+#define MAX_NMR_SAMPLES		24000
+#define MAX_BARCODE_SAMPLES	300
+#define MAX_CTRL_DATA 0x100
+#define BARCODE_CH_NUM	6
 
 namespace TrolleyInterface{
   //==============================================================================
@@ -146,6 +149,10 @@ namespace TrolleyInterface{
     unsigned int eventDataStatus;					//	0x40000190
   } trolleyReg;
 
+  typedef struct _FrameStruct {
+    short data[MAX_PAYLOAD_DATA];
+  } FrameStruct;
+
   //==============================================================================
   // Function Prototypes
   //==============================================================================
@@ -164,7 +171,7 @@ namespace TrolleyInterface{
   int DeviceArrayWrite(unsigned int address, unsigned int size, unsigned int* data);
 
   // Event Data functions
-  int DataReceive					(void* data);
+  int DataReceive (void* data);
   int DevicePurgeData				(void);
 
   // Internal use only

@@ -22,10 +22,10 @@ $(BUILD_DIR)/TrolleyInterface.o: $(SRC_DIR)/TrolleyInterface.cxx $(DEPS)
 	$(CXX) -o $@ -fPIC -c $< $(CFLAGS)
 
 $(BUILD_DIR)/TestComm.o: $(SRC_DIR)/TestComm.cxx $(DEPS)
-	$(CXX) -o $@ -fPIC -c $< $(CFLAGS)
+	$(CXX) -o $@ -fPIC -c $< $(CFLAGS) `root-config --cflags`
 
 $(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o $(LIB_DIR)/libTrolleyInterface.so
-	$(CXX) -o $@ $< $(CFLAGS) $(LIBFLAGS)
+	$(CXX) -o $@ $< $(CFLAGS) $(LIBFLAGS) `root-config --libs`
 
 .PHONY: clean
 .PHONY: install
