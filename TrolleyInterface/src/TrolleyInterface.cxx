@@ -85,6 +85,9 @@ namespace TrolleyInterface{
     //error = ConnectToTCPServer(&tcpControlHandle2, ControlPort1, DeviceIP, tcpControlCallbackFunction, NULL, tcpControlTimeout);
     // if (error) return errorCommConnect;
 
+    //Purge data before connect
+    DevicePurgeData();
+
     // Open the event data connection.
     error = ConnectToTCPServer(&tcpDataHandle, DataPort, DeviceIP, tcpDataCallbackFunction, NULL, tcpDataTimeout);
     if (error) return errorCommConnect;
@@ -137,14 +140,17 @@ namespace TrolleyInterface{
   int DevicePurgeData (void)
   {
     int				error = errorNoError;
-    unsigned int	TCPdata[1000];
+/*    unsigned int	TCPdata[1000];
     int				rxStatus = 0;
 
     do
     {
       rxStatus = ClientTCPRead(tcpDataHandle, (unsigned int*)(TCPdata), sizeof(TCPdata), 100); 
     } while(rxStatus > 0);
-
+*/
+    // Since disable control in the FPGA is currently disconnected, clear the buffers via the ARM.
+    // However, data will continue to flow.
+    DeviceWrite (0x00000300, 0x00000001);
     return error;
   }
 
