@@ -1,12 +1,11 @@
 # Grab the targets and sources as two batches
 OBJECTS = $(patsubst src/%.cxx, build/%.o, $(wildcard src/*.cxx))
 OBJ_VME = $(patsubst include/vme/%.c, build/%.o, $(wildcard include/vme/*.c))
-HEADERS = $(wildcard include/*)
 
 # Locations and default files
 PREFIX=/usr/local
 LIBDIR=$(PREFIX)/lib
-INCDIR=$(PREFIX)/include/g2field/vme
+INCDIR=$(PREFIX)/include/g2field
 CONFDIR=$(PREFIX)/etc/g2field
 LOGDIR=$(PREFIX)/var/log/g2field
 
@@ -67,10 +66,11 @@ install:
 	install lib/* $(LIBDIR)
 
 	mkdir -p $(CONFDIR)
-	install config $(CONFDIR)
+	install config/* $(CONFDIR)
 
-	mkdir -p $(INCDIR)
-	install $(HEADERS) $(INCDIR)
+	mkdir -p $(INCDIR) $(INCDIR)/vme
+	install include/*.hh $(INCDIR)
+	install include/vme/*.h $(INCDIR)/vme/
 
 	mkdir -p $(LOGDIR)
 	$(LDCONFIG)
