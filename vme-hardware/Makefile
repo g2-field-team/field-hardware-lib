@@ -1,0 +1,79 @@
+# Grab the targets and sources as two batches
+OBJECTS = $(patsubst src/%.cxx, build/%.o, $(wildcard src/*.cxx))
+OBJ_VME = $(patsubst include/vme/%.c, build/%.o, $(wildcard include/vme/*.c))
+HEADERS = $(wildcard include/*)
+
+# Locations and default files
+PREFIX=/usr/local
+LIBDIR=$(PREFIX)/lib
+INCDIR=$(PREFIX)/include/g2field/vme
+CONFDIR=$(PREFIX)/etc/g2field
+LOGDIR=$(PREFIX)/var/log/g2field
+
+# Library info.
+MAJOR=0
+MINOR=0.1
+SONAME=libg2fieldvme.so
+ARNAME=libg2fieldvme.a
+LIBNAME=$(SONAME).$(MAJOR).$(MINOR)
+
+# Add a few flags to all compiler calls.
+CXX += -O3 -fPIC
+CC += -O3 -fPIC
+
+ifdef DEBUG
+	CXX += -g -pg
+	CC += -g -pg
+endif
+
+# Add local include directory
+CPPFLAGS += -Iinclude
+
+# ROOT libs and flags
+CPPFLAGS += $(shell root-config --cflags)
+LIBS += $(shell root-config --libs)
+LIBFLAGS = -shared -Wl,-soname,$(SONAME).$(MAJOR) 
+
+all: $(OBJECTS) $(OBJ_VME) $(TARGETS) lib/$(ARNAME) lib/$(LIBNAME)
+
+$(LOGFILE):
+	@mkdir -p $(@D)
+	@touch $@
+
+$(CONFDIR):
+	@mkdir -p $(@D)
+	@cp -r config $(@D)/
+
+build/%.o: src/%.cxx
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
+
+build/%.o: include/vme/%.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+lib/$(ARNAME): $(OBJECTS) $(OBJ_VME)
+	$(AR) -rcs $@ $+
+
+lib/$(LIBNAME): $(OBJECTS) $(OBJ_VME)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LIBFLAGS) -o $@ $+ $(LIBS)
+	ln -sf $(LIBNAME) lib/$(SONAME) 
+	ln -sf $(LIBNAME) lib/$(SONAME).$(MAJOR)
+
+install:
+	mkdir -p $(LIBDIR)
+	install lib/* $(LIBDIR)
+
+	mkdir -p $(CONFDIR)
+	install config $(CONFDIR)
+
+	mkdir -p $(INCDIR)
+	install $(HEADERS) $(INCDIR)
+
+	mkdir -p $(LOGDIR)
+	$(LDCONFIG)
+
+uninstall:
+	rm -f $(LIBDIR)/$(SONAME)*
+	rm -rf $(INCDIR) $(LOGDIR) $(CONFDIR)
+
+clean:
+	rm -f $(TARGETS) $(OBJECTS) $(OBJ_VME)
