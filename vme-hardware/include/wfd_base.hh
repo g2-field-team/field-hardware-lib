@@ -30,7 +30,6 @@
 
 //--- project includes ------------------------------------------------------//
 #include "common_base.hh"
-#include "common.hh"
 
 namespace hw {
 

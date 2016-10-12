@@ -1,4 +1,5 @@
 #include "sis3302.hh"
+#include "common_extdef.hh" // Included only once, here.
 
 namespace hw {
 

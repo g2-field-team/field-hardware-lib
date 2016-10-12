@@ -12,6 +12,7 @@ about:  Exists to instantiate some of the shared variables for the hw.
 \*===========================================================================*/
 
 #include "common.hh"
+#include "common_base.hh"
 
 namespace hw {
 

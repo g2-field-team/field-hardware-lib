@@ -30,10 +30,14 @@ endif
 CPPFLAGS += -Iinclude
 
 # ROOT libs and flags
-CPPFLAGS += $(shell root-config --cflags)
+CXXFLAGS += $(shell root-config --cflags)
 LIBS += $(shell root-config --libs)
-LIBFLAGS = -shared -Wl,-soname,$(SONAME).$(MAJOR) 
 
+ifeq ($(shell uname -s), Darwin)
+	LIBFLAGS = -shared -Wl,-install_name,$(SONAME).$(MAJOR) 
+else
+	LIBFLAGS = -shared -Wl,-soname,$(SONAME).$(MAJOR) 
+endif
 all: $(OBJECTS) $(OBJ_VME) $(TARGETS) lib/$(ARNAME) lib/$(LIBNAME)
 
 $(LOGFILE):
