@@ -85,6 +85,14 @@ public:
     }
   };
 
+  inline bool DataAvailable() {
+    if (data_queue_.size() > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
 protected:
 
   const int num_ch_;
