@@ -25,15 +25,11 @@ void Sis3302::LoadConfig()
   uint msg = 0;
   char str[256];
 
-  std::cout << conf_file_ << std::endl;
-
   LogMessage("configuring device with file: %s", conf_file_.c_str());
 
   // Open the configuration file.
   boost::property_tree::ptree conf;
   boost::property_tree::read_json(conf_file_, conf);
-
-  std::cout << conf.get<string>("base_address") << std::endl;
 
   // Get the base address for the device.  Convert from hex.
   base_address_ = std::stoul(conf.get<string>("base_address"), nullptr, 0);
