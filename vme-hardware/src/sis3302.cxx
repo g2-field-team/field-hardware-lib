@@ -6,8 +6,10 @@ namespace hw {
 Sis3302::Sis3302(std::string name, std::string conf, int trace_len) :
   CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 8, trace_len)
 {
-  LogMessage("worker created");
+  conf_file_ = conf;
+
   LoadConfig();
+  LogMessage("worker created");
 
   read_len_ = trace_len / 2;
 
@@ -23,14 +25,18 @@ void Sis3302::LoadConfig()
   uint msg = 0;
   char str[256];
 
+  std::cout << conf_file_ << std::endl;
+
   LogMessage("configuring device with file: %s", conf_file_.c_str());
 
   // Open the configuration file.
   boost::property_tree::ptree conf;
   boost::property_tree::read_json(conf_file_, conf);
 
+  std::cout << conf.get<string>("base_address") << std::endl;
+
   // Get the base address for the device.  Convert from hex.
-  base_address_ = std::stoul(conf_.get<string>("base_address"), nullptr, 0);
+  base_address_ = std::stoul(conf.get<string>("base_address"), nullptr, 0);
 
   // Read the base register.
   rc = Read(CONTROL_STATUS, msg);
@@ -67,11 +73,11 @@ void Sis3302::LoadConfig()
   LogMessage("setting the control/status register");
   msg = 0;
 
-  if (conf_.get<bool>("invert_ext_lemo")) {
+  if (conf.get<bool>("invert_ext_lemo")) {
     msg = 0x10; // invert EXT TRIG
   }
 
-  if (conf_.get<bool>("user_led_on")) {
+  if (conf.get<bool>("user_led_on")) {
     msg |= 0x1; // LED on
   }
 
@@ -99,21 +105,21 @@ void Sis3302::LoadConfig()
   LogMessage("setting the acquisition register");
   msg = 0;
 
-  if (conf_.get<bool>("enable_int_stop", true))
+  if (conf.get<bool>("enable_int_stop", true))
     msg |= 0x1 << 6; //enable internal stop trigger
 
-  if (conf_.get<bool>("enable_ext_lemo", true))
+  if (conf.get<bool>("enable_ext_lemo", true))
     msg |= 0x1 << 8; //enable external lemo
 
   // Set the clock source
-  if (conf_.get<bool>("enable_ext_clk", false)) {
+  if (conf.get<bool>("enable_ext_clk", false)) {
 
     LogMessage("enabling external clock");
     msg |= (0x5 << 12);
 
   } else {
 
-    clk_rate_ = conf_.get<int>("int_clk_setting_MHz", 100);
+    clk_rate_ = conf.get<int>("int_clk_setting_MHz", 100);
     LogMessage("enabling internal clock");
 
     if (clk_rate_ > 100) {
@@ -189,7 +195,7 @@ void Sis3302::LoadConfig()
   }
 
   LogMessage("setting start/stop delays");
-  msg = conf_.get<int>("start_delay", 0);
+  msg = conf.get<int>("start_delay", 0);
 
   rc = Write(START_DELAY, msg);
   if (rc != 0) {
@@ -197,7 +203,7 @@ void Sis3302::LoadConfig()
     ++nerrors;
   }
 
-  msg = conf_.get<int>("stop_delay", 0);
+  msg = conf.get<int>("stop_delay", 0);
   rc = Write(STOP_DELAY, msg);
   if (rc != 0) {
     LogError("failed to set stop delay");
@@ -212,7 +218,7 @@ void Sis3302::LoadConfig()
   }
 
   // Set event configure register with changes
-  if (conf_.get<bool>("enable_event_length_stop", true)) {
+  if (conf.get<bool>("enable_event_length_stop", true)) {
     msg |= 0x1 << 5;
   }
 
@@ -232,7 +238,7 @@ void Sis3302::LoadConfig()
   }
 
   // Set the pre-trigger buffer length.
-  msg = std::stoi(conf_.get<string>("pretrigger_samples", "0x0"), nullptr, 0);
+  msg = std::stoi(conf.get<string>("pretrigger_samples", "0x0"), nullptr, 0);
   rc = Write(PRETRIGGER_DELAY_ALL_ADC, msg);
   if (rc != 0) {
     LogError("failed to set pre-trigger buffer");

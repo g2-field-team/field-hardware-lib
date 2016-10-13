@@ -53,9 +53,6 @@ class Sis3302 : public VmeBase, public WfdBase {
 
   void LoadConfig();
 
-  // The threaded loop that polls for data and pushes events on the queue.
-  void WorkLoop();
-
   // Returns the oldest event on the data queue.
   wfd_data_t PopEvent();
 
@@ -86,12 +83,14 @@ class Sis3302 : public VmeBase, public WfdBase {
   int clk_rate_;
 
   std::string conf_file_;
-  boost::property_tree::ptree conf_;
 
   std::chrono::high_resolution_clock::time_point t0_;
   
   // Checks the device for a triggered event.
   bool EventAvailable();
+
+  // The threaded loop that polls for data and pushes events on the queue.
+  void WorkLoop();
 
   // Reads the data from the device with vme calls.
   void GetEvent(wfd_data_t &bundle);
