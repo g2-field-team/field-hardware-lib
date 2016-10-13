@@ -36,7 +36,9 @@ ifeq ($(shell uname -s), Darwin)
 	LIBFLAGS = -shared -Wl,-install_name,$(SONAME).$(MAJOR) 
 else
 	LIBFLAGS = -shared -Wl,-soname,$(SONAME).$(MAJOR) 
+	LDCONFIG = ldconfig
 endif
+
 all: $(OBJECTS) $(OBJ_VME) $(TARGETS) lib/$(ARNAME) lib/$(LIBNAME)
 
 $(LOGFILE):
@@ -58,8 +60,6 @@ lib/$(ARNAME): $(OBJECTS) $(OBJ_VME)
 
 lib/$(LIBNAME): $(OBJECTS) $(OBJ_VME)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LIBFLAGS) -o $@ $+ $(LIBS)
-	ln -sf $(LIBNAME) lib/$(SONAME) 
-	ln -sf $(LIBNAME) lib/$(SONAME).$(MAJOR)
 
 install:
 	mkdir -p $(LIBDIR)
