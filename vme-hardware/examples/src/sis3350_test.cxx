@@ -1,18 +1,18 @@
 #include <fstream>
-#include "g2field/sis3302.hh"
+#include "g2field/sis3350.hh"
 
 
 int main(int argc, char *argv[])
 {
-  int trace_len = 100000;
-  int num_ch = 8;
+  int trace_len = 1024;
+  int num_ch = 4;
 
   // Open an output file.
   std::ofstream out;
-  out.open("output/sis3302_test_data.csv");
+  out.open("output/sis3350_test_data.csv");
 
   // Create the digitizer.
-  hw::Sis3302 wfd("Test WFD", "/usr/local/etc/g2field/sis3302_0.json", trace_len);
+  hw::Sis3350 wfd("Test WFD", "/usr/local/etc/g2field/sis3350_0.json", trace_len);
   hw::wfd_data_t data;
 
   // Grab an event (well, try a few times anyway).
