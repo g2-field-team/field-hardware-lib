@@ -15,6 +15,8 @@ Sis3302::Sis3302(std::string name, std::string conf, int trace_len) :
 
   thread_live_ = true;
   go_time_ = true;
+
+  StartThread();
 }
 
 void Sis3302::LoadConfig()
@@ -363,6 +365,15 @@ void Sis3302::GetEvent(wfd_data_t &bundle)
 {
   using namespace std::chrono;
   int ch, offset, rc, count = 0;
+
+  // Make sure the bundle can handle the data.
+  if (bundle.dev_clock.size() != num_ch_) {
+    bundle.dev_clock.resize(num_ch_);
+  }
+
+  if (bundle.trace.size() != num_ch_) {
+    bundle.trace.resize(num_ch_);
+  }
 
   // Check how long the event is.
   //expected trace_len_ + 8
