@@ -6,11 +6,11 @@
   author: Matthias W. Smith
   email:  mwsmith2@uw.edu
   file:   vme_device.hh
-  
+
   about:  Implements the some basic vme functionality to form a base
           class that vme devices can inherit.  It really just defines
 	  the most basic read, write, and block transfer vme functions.
-	  Sis3100VmeDev is a better class to inherit from if more 
+	  Sis3100VmeDev is a better class to inherit from if more
 	  functionality is needed.
 
 \*===========================================================================*/
@@ -38,30 +38,27 @@ namespace hw {
 class WfdBase : public virtual CommonBase {
 
 public:
-  
+
   // Ctor params:
   // name - used in naming output data
   // conf - load parameters from a json configuration file
   // num_ch_ - number of channels in the digitizer
   // read_trace_len_ - length of each trace in units of sizeof(uint)
-  WfdBase(std::string name, 
-	  std::string conf, 
-	  int num_ch, 
-	  int trace_len) : 
-    CommonBase(name), num_ch_(num_ch), trace_len_(trace_len) {
-    StartThread();
-  };
+  WfdBase(std::string name,
+	  std::string conf,
+	  int num_ch,
+	  int trace_len) :
+    CommonBase(name), num_ch_(num_ch), trace_len_(trace_len) {};
 
-  WfdBase(std::string name, 
-	  boost::property_tree::ptree pt, 
-	  int num_ch, 
-	  int trace_len) : 
-    CommonBase(name), num_ch_(num_ch), trace_len_(trace_len) {
-    StartThread();
-  };
+  WfdBase(std::string name,
+	  boost::property_tree::ptree pt,
+	  int num_ch,
+	  int trace_len) :
+    CommonBase(name), num_ch_(num_ch), trace_len_(trace_len) {};
 
   virtual ~WfdBase() {
     thread_live_ = false;
+    go_time_ = false;
     if (work_thread_.joinable()) {
       work_thread_.join();
     }
@@ -73,13 +70,13 @@ public:
     if (work_thread_.joinable()) {
       work_thread_.join();
     }
-    std::cout << "Launching worker thread. " << std::endl;
     work_thread_ = std::thread(&WfdBase::WorkLoop, this);
   };
 
   // Rejoins the data pulling thread.
   virtual void StopThread() {
     thread_live_ = false;
+    go_time_ = false;
     if (work_thread_.joinable()) {
       work_thread_.join();
     }
