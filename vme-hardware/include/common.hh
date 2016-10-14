@@ -35,6 +35,9 @@ struct wfd_data_t {
   std::vector<std::vector<UShort_t>> trace;
 };
 
+// Define a convenience type for dealing with groups of WFDs.
+typedef std::vector<wfd_data_t> event_data_t;
+
 // A useful define guard for I/O with the vme bus.
 extern int vme_dev;
 extern std::string vme_path;
