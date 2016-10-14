@@ -89,7 +89,7 @@ class WfdContainer : public CommonBase {
  private:
 
   // This is the actual worker list.
-  std::vector<hw::WfdBase *> workers_;
+  std::vector<WfdBase *> workers_;
 };
 
 } // ::hw
