@@ -22,14 +22,13 @@ int main(int argc, char *argv[])
 
   // Open an output file.
   std::ofstream out;
-  out.open(outfile);
 
   // Create the digitizer.
   hw::Sis3316 wfd(wfd_name, wfd_conf, trace_len);
   hw::wfd_data_t data;
 
   // Create the trigger board.
-  hw::DioTriggerBoard trg(0x1000, trg_card, trg_port, false);
+  hw::DioTriggerBoard trg(0x0, trg_card, trg_port, false);
 
   // Grab an event (well, try a few times anyway).
   for (int i = 0; i < num_read_attempts; ++i) {
@@ -40,14 +39,19 @@ int main(int argc, char *argv[])
       break;
 
     } else {
+      // Try to trigger the digitizer and NMR pulser.
+      trg.FireTriggers(trg_mask);
       usleep(200000);
     }
+  }
 
-    // Try to trigger the digitizer and NMR pulser.
-    trg.FireTriggers(trg_mask);
+  if (data.trace.size() == 0) {
+    std::cout << "No data to read out from WFD." << std::endl;
   }
 
   // Save the waveforms.
+  out.open(outfile);
+
   for (int idx = 0; idx < trace_len; ++idx) {
     for (int ch = 0; ch < num_ch; ++ch) {
       out << data.trace[ch][idx] << " ";
