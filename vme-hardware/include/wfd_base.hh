@@ -75,12 +75,16 @@ public:
 
   // Rejoins the data pulling thread.
   virtual void StopThread() {
-    thread_live_ = false;
     go_time_ = false;
+    thread_live_ = false;
     if (work_thread_.joinable()) {
       work_thread_.join();
     }
   };
+
+  virtual void StartWorker() { go_time_ = true; };
+
+  virtual void StopWorker() { go_time_ = false; };
 
   inline bool DataAvailable() {
     if (data_queue_.size() > 0) {
@@ -89,6 +93,22 @@ public:
       return false;
     }
   }
+
+  inline void FlushEvents() {
+    queue_mutex_.lock();
+    while (!data_queue_.empty()) {
+      data_queue_.pop();
+    }
+    has_event_ = false;
+    queue_mutex_.unlock();
+  }
+
+  // Accessors.
+  inline bool has_event() { return has_event_; };
+
+  inline int num_events() { return num_events_; };
+
+  virtual wfd_data_t PopEvent() = 0;
 
 protected:
 
