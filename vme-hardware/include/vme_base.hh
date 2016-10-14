@@ -6,11 +6,11 @@
   author: Matthias W. Smith
   email:  mwsmith2@uw.edu
   file:   vme_device.hh
-  
+
   about:  Implements the some basic vme functionality to form a base
           class that vme devices can inherit.  It really just defines
 	  the most basic read, write, and block transfer vme functions.
-	  Sis3100VmeDev is a better class to inherit from if more 
+	  Sis3100VmeDev is a better class to inherit from if more
 	  functionality is needed.
 
 \*===========================================================================*/
@@ -19,6 +19,7 @@
 #include <ctime>
 #include <fcntl.h>
 #include <iostream>
+#include <errno.h>
 
 //--- other includes --------------------------------------------------------//
 #include "vme/sis3100_vme_calls.h"
@@ -37,7 +38,7 @@ namespace hw {
 class VmeBase : virtual public CommonBase {
 
 public:
-  
+
   // Ctor params:
   // name - used in naming output data
   // conf - load parameters from a json configuration file
@@ -50,7 +51,7 @@ public:
     base_address_ = std::stoul(pt.get<std::string>("base_address"), nullptr, 0);
   };
 
-  // VmeBase(std::string name, boost::property_tree::ptree pt) : 
+  // VmeBase(std::string name, boost::property_tree::ptree pt) :
   // CommonBase(name, conf);
 
 protected:
@@ -60,7 +61,7 @@ protected:
   int device_;
   int read_len_;
   uint base_address_; // contained in the conf file.
-  
+
   inline int Read(uint addr, uint &msg);        // A32D32
   inline int Write(uint addr, uint msg);        // A32D32
   inline int Read16(uint addr, ushort &msg);    // A16D16
@@ -94,12 +95,12 @@ int VmeBase::Read(uint addr, uint &msg)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -111,7 +112,7 @@ int VmeBase::Read(uint addr, uint &msg)
 
   } else {
 
-    this->LogDump("read32  vme device 0x%08x, register 0x%08x, data 0x%08x", 
+    this->LogDump("read32  vme device 0x%08x, register 0x%08x, data 0x%08x",
                    base_address_, addr, msg);
   }
 
@@ -136,12 +137,12 @@ int VmeBase::Write(uint addr, uint msg)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -154,7 +155,7 @@ int VmeBase::Write(uint addr, uint msg)
 
   } else {
 
-    this->LogDump("write32 vme device 0x%08x, register 0x%08x, data 0x%08x", 
+    this->LogDump("write32 vme device 0x%08x, register 0x%08x, data 0x%08x",
                    base_address_, addr, msg);
   }
 
@@ -178,12 +179,12 @@ int VmeBase::Read16(uint addr, ushort &msg)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -195,7 +196,7 @@ int VmeBase::Read16(uint addr, ushort &msg)
 
   } else {
 
-    this->LogDump("read16  vme device 0x%08x, register 0x%08x, data 0x%04x", 
+    this->LogDump("read16  vme device 0x%08x, register 0x%08x, data 0x%04x",
                    base_address_, addr, msg);
   }
 
@@ -219,12 +220,12 @@ int VmeBase::Write16(uint addr, ushort msg)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -237,7 +238,7 @@ int VmeBase::Write16(uint addr, ushort msg)
 
   } else {
 
-    this->LogDump("write16 vme device 0x%08x, register 0x%08x, data 0x%04x", 
+    this->LogDump("write16 vme device 0x%08x, register 0x%08x, data 0x%04x",
                    base_address_, addr, msg);
   }
 
@@ -263,17 +264,17 @@ int VmeBase::ReadTrace(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
   // Make the vme call.
-  this->LogDump("read_2evme vme device 0x%08x, register 0x%08x, samples %i", 
+  this->LogDump("read_2evme vme device 0x%08x, register 0x%08x, samples %i",
 		 base_address_, addr, read_len_);
 
   status = (retval = vme_A32_2EVME_read(device_,
@@ -288,7 +289,7 @@ int VmeBase::ReadTrace(uint addr, uint *trace)
 
   } else {
 
-    this->LogDump("read32_evme address 0x%08x, ndata asked %i, ndata recv %i", 
+    this->LogDump("read32_evme address 0x%08x, ndata asked %i, ndata recv %i",
                    base_address_ + addr, read_len_, num_got);
   }
 
@@ -304,17 +305,17 @@ int VmeBase::ReadTrace(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
   // Make the vme call.
-  this->LogDump("read_2evme vme device 0x%08x, register 0x%08x, samples %i", 
+  this->LogDump("read_2evme vme device 0x%08x, register 0x%08x, samples %i",
 		 base_address_, addr, trace_len);
 
   status = (retval = vme_A32_2EVME_read(device_,
@@ -329,7 +330,7 @@ int VmeBase::ReadTrace(uint addr, uint *trace, int trace_len)
 
   } else {
 
-    this->LogDump("read32_evme address 0x%08x, ndata asked %i, ndata recv %i", 
+    this->LogDump("read32_evme address 0x%08x, ndata asked %i, ndata recv %i",
                    base_address_ + addr, trace_len, num_got);
   }
 
@@ -346,12 +347,12 @@ int VmeBase::ReadTraceFifo(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -384,12 +385,12 @@ int VmeBase::ReadTraceFifo(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -432,12 +433,12 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -455,7 +456,7 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace)
 
   } else {
 
-    this->LogDump("read32_mblt address 0x%08x, ndata asked %i, ndata recv %i", 
+    this->LogDump("read32_mblt address 0x%08x, ndata asked %i, ndata recv %i",
                    base_address_ + addr, read_len_, num_got);
   }
 
@@ -471,12 +472,12 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -494,7 +495,7 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace, int trace_len)
 
   } else {
 
-    this->LogDump("read32_mblt address 0x%08x, ndata asked %i, ndata recv %i", 
+    this->LogDump("read32_mblt address 0x%08x, ndata asked %i, ndata recv %i",
                    base_address_ + addr, trace_len, num_got);
   }
 
@@ -520,12 +521,12 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -550,7 +551,7 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace)
   while (word_count > 0 && retval == 0);
 
   //if (retval) {
-  //	std::cout << "read_trace_len: " << trace_len << ", word count left: " << word_count << std::endl; 
+  //	std::cout << "read_trace_len: " << trace_len << ", word count left: " << word_count << std::endl;
   //      std::cout << "retval: " << retval << ", num_got: " << num_got << ", at offset: " << offset << std::endl;
   //}
 
@@ -567,7 +568,7 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace)
 
   } else {
 
-    this->LogDump("read32_mblt address 0x%08x, ndata asked %i, ndata recv %i", 
+    this->LogDump("read32_mblt address 0x%08x, ndata asked %i, ndata recv %i",
                    base_address_ + addr, read_len_, num_got);
   }
 
@@ -583,12 +584,12 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -613,7 +614,7 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace, int trace_len)
   while (word_count > 0 && retval == 0);
 
   //if (retval) {
-  //	std::cout << "read_trace_len: " << trace_len << ", word count left: " << word_count << std::endl; 
+  //	std::cout << "read_trace_len: " << trace_len << ", word count left: " << word_count << std::endl;
   //      std::cout << "retval: " << retval << ", num_got: " << num_got << ", at offset: " << offset << std::endl;
   //}
 
@@ -630,7 +631,7 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace, int trace_len)
 
   } else {
 
-    this->LogDump("read32_mblt address 0x%08x, ndata asked %i, ndata recv %i", 
+    this->LogDump("read32_mblt address 0x%08x, ndata asked %i, ndata recv %i",
                    base_address_ + addr, trace_len, num_got);
   }
 
@@ -656,12 +657,12 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -678,7 +679,7 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace)
 
   } else {
 
-    this->LogDump("read32_mblt_fifo addr 0x%08x, trace_len %i, ndata recv %i", 
+    this->LogDump("read32_mblt_fifo addr 0x%08x, trace_len %i, ndata recv %i",
                    base_address_ + addr, read_len_, num_got);
   }
 
@@ -694,12 +695,12 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -716,7 +717,7 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace, int trace_len)
 
   } else {
 
-    this->LogDump("read32_mblt_fifo addr 0x%08x, trace_len %i, ndata recv %i", 
+    this->LogDump("read32_mblt_fifo addr 0x%08x, trace_len %i, ndata recv %i",
                    base_address_ + addr, trace_len, num_got);
   }
 
@@ -741,12 +742,12 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -764,7 +765,7 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace)
 
   } else {
 
-    this->LogDump("read32_blt32_fifo addr 0x%08x, trace_len %i, ndata recv %i", 
+    this->LogDump("read32_blt32_fifo addr 0x%08x, trace_len %i, ndata recv %i",
                    base_address_ + addr, read_len_, num_got);
   }
 
@@ -780,12 +781,12 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(2);
+    usleep(10);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to find vme device, error %i", device_);
+    this->LogError("failure to open device: %s", strerror(errno));
     return device_;
   }
 
@@ -803,7 +804,7 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace, int trace_len)
 
   } else {
 
-    this->LogDump("read32_blt32_fifo addr 0x%08x, trace_len %i, ndata recv %i", 
+    this->LogDump("read32_blt32_fifo addr 0x%08x, trace_len %i, ndata recv %i",
                    base_address_ + addr, trace_len, num_got);
   }
 
