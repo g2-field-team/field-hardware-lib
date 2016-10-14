@@ -10,6 +10,8 @@ Sis3316::Sis3316(std::string name, std::string conf, int trace_len) :
   read_len_ = 3 + trace_len_ / 2; // only for vme ReadTrace
   read_len_ += (read_len_ % 2); // needs to be even
   bank2_armed_flag = false;
+
+  StartThread();
 }
 
 void Sis3316::LoadConfig()
@@ -710,6 +712,15 @@ void Sis3316::GetEvent(wfd_data_t &bundle)
   using namespace std::chrono;
   int ch, rc, count = 0;
   uint trace_addr, addr, offset, msg;
+
+  // Make sure the bundle can handle the data.
+  if (bundle.dev_clock.size() != num_ch_) {
+    bundle.dev_clock.resize(num_ch_);
+  }
+
+  if (bundle.trace.size() != num_ch_) {
+    bundle.trace.resize(num_ch_);
+  }
 
   // Check how long the event is.
   uint next_sample_address[num_ch_];

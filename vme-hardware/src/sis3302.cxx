@@ -375,9 +375,6 @@ void Sis3302::GetEvent(wfd_data_t &bundle)
     bundle.trace.resize(num_ch_);
   }
 
-  // Check how long the event is.
-  //expected trace_len_ + 8
-
   uint next_sample_address[num_ch_];
   //  static trace = new uint[num_ch_][trace_len_ / 2];
   static uint timestamp[2];

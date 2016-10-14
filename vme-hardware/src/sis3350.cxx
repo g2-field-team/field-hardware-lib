@@ -9,6 +9,8 @@ namespace hw {
   read_len_ = trace_len_ / 2 + 4;
 
   LoadConfig();
+
+  StartThread();
 }
 
 void Sis3350::LoadConfig()
@@ -398,11 +400,18 @@ void Sis3350::GetEvent(wfd_data_t &bundle)
 {
   using namespace std::chrono;
 
+  // Make sure the bundle can handle the data.
+  if (bundle.dev_clock.size() != num_ch_) {
+    bundle.dev_clock.resize(num_ch_);
+  }
+
+  if (bundle.trace.size() != num_ch_) {
+    bundle.trace.resize(num_ch_);
+  }
+
+  // Local variables.
   int ch, offset, rc = 0;
   bool is_event = true;
-
-  // Check how long the event is.
-  // expected trace_len_ + 8
 
   uint next_sample_address[4] = {0, 0, 0, 0};
 
