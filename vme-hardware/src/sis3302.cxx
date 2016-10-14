@@ -27,7 +27,7 @@ void Sis3302::LoadConfig()
   uint msg = 0;
   char str[256];
 
-  LogMessage("configuring device with file: %s", conf_file_.c_str());
+  LogMessage("configuring %s with file: %s", name_.c_str(), conf_file_.c_str());
 
   // Open the configuration file.
   boost::property_tree::ptree conf;

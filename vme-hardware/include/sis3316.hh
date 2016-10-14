@@ -115,7 +115,7 @@ class Sis3316 : public VmeBase, public WfdBase {
   // Variables
   std::chrono::high_resolution_clock::time_point t0_;
   std::atomic<bool> bank2_armed_flag;
-  boost::property_tree::ptree conf_;
+  std::string conf_file_;
 
   // Checks the device for a triggered event.
   bool EventAvailable();

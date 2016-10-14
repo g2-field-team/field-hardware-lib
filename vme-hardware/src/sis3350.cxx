@@ -5,10 +5,12 @@ namespace hw {
   Sis3350::Sis3350(std::string name, std::string conf, int trace_len) :
   CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 4, trace_len)
 {
+  // Grab the config file and load it.
+  conf_file_ = conf;
+  LoadConfig();
+
   // Set the read length for VME ReadTrace routine.
   read_len_ = trace_len_ / 2 + 4;
-
-  LoadConfig();
 
   StartThread();
 }
@@ -18,11 +20,17 @@ void Sis3350::LoadConfig()
   int rc = 0;
   uint msg = 0;
 
+  LogMessage("configuring %s with file: %s", name_.c_str(), conf_file_.c_str());
+
+  // Open the configuration file.
+  boost::property_tree::ptree conf;
+  boost::property_tree::read_json(conf_file_, conf);
+
   // Get the device filestream.  If it isn't open, open it.
-  std::string dev_path = conf_.get<std::string>("device");
+  std::string dev_path = conf.get<std::string>("device");
 
   // Get the base address.  Needs to be converted from hex.
-  base_address_ = std::stoul(conf_.get<std::string>("base_address"), nullptr, 0);
+  base_address_ = std::stoul(conf.get<std::string>("base_address"), nullptr, 0);
 
   // Check for device.
   rc = Read(0x0, msg);
@@ -56,11 +64,11 @@ void Sis3350::LoadConfig()
   // Set and check the control/status register.
   msg = 0;
 
-  if (conf_.get<bool>("invert_ext_lemo")) {
+  if (conf.get<bool>("invert_ext_lemo")) {
     msg |= 0x10; // invert EXT TRIG
   }
 
-  if (conf_.get<bool>("user_led_on")) {
+  if (conf.get<bool>("user_led_on")) {
     msg |= 0x1; // LED on
   }
 
@@ -83,7 +91,7 @@ void Sis3350::LoadConfig()
   // Set to the acquisition register.
   msg = 0x1;//sync ring buffer mode
 
-  if (conf_.get<bool>("enable_ext_lemo")) {
+  if (conf.get<bool>("enable_ext_lemo")) {
     msg |= 0x1 << 8; //enable EXT LEMO
   }
 
@@ -203,7 +211,7 @@ void Sis3350::LoadConfig()
   }
 
   //ring buffer pre-trigger sample length
-  msg = std::stoi(conf_.get<std::string>("pretrigger_samples"), nullptr, 0);
+  msg = std::stoi(conf.get<std::string>("pretrigger_samples"), nullptr, 0);
   rc = Write(0x01000024, msg);
   if (rc != 0) {
     LogError("failed to set ring buffer pre-trigger buffer");
@@ -212,7 +220,7 @@ void Sis3350::LoadConfig()
   //range -1.5 to +0.3 V
   uint ch = 0;
   //DAC offsets
-  for (auto &val : conf_.get_child("channel_offset")) {
+  for (auto &val : conf.get_child("channel_offset")) {
 
     int offset = 0x02000050;
     offset |= (ch >> 1) << 24;
@@ -275,7 +283,7 @@ void Sis3350::LoadConfig()
 
   //gain - factory default 18 -> 5V
   ch = 0;
-  for (auto &val : conf_.get_child("channel_gain")) {
+  for (auto &val : conf.get_child("channel_gain")) {
     //  for (ch = 0; ch < num_ch_; ch++) {
     msg = val.second.get_value<int>();
 

@@ -5,8 +5,11 @@ namespace hw {
 Sis3316::Sis3316(std::string name, std::string conf, int trace_len) :
   CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 16, trace_len)
 {
+  // Grab the config file.
+  conf_file_ = conf;
   LoadConfig();
 
+  // Class init.
   read_len_ = 3 + trace_len_ / 2; // only for vme ReadTrace
   read_len_ += (read_len_ % 2); // needs to be even
   bank2_armed_flag = false;
@@ -21,8 +24,14 @@ void Sis3316::LoadConfig()
   int rc = 0, gr = 0, nerrors = 0;
   uint msg = 0, addr = 0;
 
+  LogMessage("configuring %s with file: %s", name_.c_str(), conf_file_.c_str());
+
+  // Open the configuration file.
+  boost::property_tree::ptree conf;
+  boost::property_tree::read_json(conf_file_, conf);
+
   // Get the base address for the device.  Convert from hex.
-  base_address_ = std::stoul(conf_.get<string>("base_address"), nullptr, 0);
+  base_address_ = std::stoul(conf.get<string>("base_address"), nullptr, 0);
 
   // Read the base register.
   rc = Read(CONTROL_STATUS, msg);
@@ -176,17 +185,17 @@ void Sis3316::LoadConfig()
 
   // Enable external LEMO trigger.
   msg = 0;
-  if (conf_.get<bool>("enable_ext_trg", true)) {
+  if (conf.get<bool>("enable_ext_trg", true)) {
     msg |= (0x1 << 4); // enable external trigger bit
     LogMessage("enabling external triggers");
   }
 
-  if (conf_.get<bool>("invert_ext_trg", false)) {
+  if (conf.get<bool>("invert_ext_trg", false)) {
     msg |= (0x1 << 5); // invert external trigger bit
     LogMessage("inverting external triggers");
   }
 
-  if (conf_.get<bool>("enable_ext_clk", false)) {
+  if (conf.get<bool>("enable_ext_clk", false)) {
     msg |= (0x1 << 0); // enable external clock
     LogMessage("enabling external clock");
   }
@@ -199,7 +208,7 @@ void Sis3316::LoadConfig()
     ++nerrors;
   }
 
-  if (conf_.get<bool>("enable_ext_clk", false)) {
+  if (conf.get<bool>("enable_ext_clk", false)) {
 
     // // Reset the device again.
     // rc = Write(KEY_RESET, 0x1);
@@ -222,15 +231,15 @@ void Sis3316::LoadConfig()
 
     // Enable external LEMO trigger.
     msg = 0;
-    if (conf_.get<bool>("enable_ext_trg", true)) {
+    if (conf.get<bool>("enable_ext_trg", true)) {
       msg |= (0x1 << 4); // enable external trigger bit
     }
 
-    if (conf_.get<bool>("invert_ext_trg", false)) {
+    if (conf.get<bool>("invert_ext_trg", false)) {
       msg |= (0x1 << 5); // invert external trigger bit
     }
 
-    if (conf_.get<bool>("enable_ext_clk", false)) {
+    if (conf.get<bool>("enable_ext_clk", false)) {
       msg |= (0x1 << 0); // enable external clock
     }
 
@@ -284,8 +293,8 @@ void Sis3316::LoadConfig()
       ++nerrors;
     }
 
-    auto hs = conf_.get<unsigned char>("oscillator_hs", 5);
-    auto n1 = conf_.get<unsigned char>("oscillator_n1", 5);
+    auto hs = conf.get<unsigned char>("oscillator_hs", 5);
+    auto n1 = conf.get<unsigned char>("oscillator_n1", 5);
     SetOscFreqHSN1(0, hs, n1);
   }
 
@@ -331,7 +340,7 @@ void Sis3316::LoadConfig()
 
     // Set address to ADC's INPUT_TAP_DELAY_REG
     addr = CH1_4_INPUT_TAP_DELAY + kAdcRegOffset * gr;
-    string hex_tap_delay = conf_.get<string>("iob_tap_delay", "0x1020");
+    string hex_tap_delay = conf.get<string>("iob_tap_delay", "0x1020");
     uint iob_tap_delay = std::stoi(hex_tap_delay, nullptr, 0);
 
     if (iob_tap_delay & 0xffff0000 != 0) {
@@ -370,7 +379,7 @@ void Sis3316::LoadConfig()
   }
 
   // Set the DAC offsets by groups of 4 channels
-  if (conf_.get<bool>("set_voltage_offset", true)) {
+  if (conf.get<bool>("set_voltage_offset", true)) {
 
     for (gr = 0; gr < kNumChannelGroups; ++gr) {
 
@@ -385,7 +394,7 @@ void Sis3316::LoadConfig()
       }
       usleep(1000);  // update takes time
 
-      string dac_offset_hex = conf_.get<string>("dac_voltage_offset", "0x8000");
+      string dac_offset_hex = conf.get<string>("dac_voltage_offset", "0x8000");
       uint offset = std::stoi(dac_offset_hex, nullptr, 0);
 
       if ((offset & 0xffff0000) != 0) {
@@ -477,7 +486,7 @@ void Sis3316::LoadConfig()
   }
 
   // Set the pre-trigger buffer length for each channel.
-  msg = std::stoi(conf_.get<string>("pretrigger_samples", "0x0"), nullptr, 0);
+  msg = std::stoi(conf.get<string>("pretrigger_samples", "0x0"), nullptr, 0);
 
   if ((msg & 0xffffc) != 0) {
     LogWarning("pre-trigger delay truncated to max of 0x1ffe");
@@ -508,14 +517,14 @@ void Sis3316::LoadConfig()
       ++nerrors;
     }
 
-    if (conf_.get<bool>("enable_ext_trg", true)) {
+    if (conf.get<bool>("enable_ext_trg", true)) {
       msg |= 0x1 << 3;
       msg |= 0x1 << 11;
       msg |= 0x1 << 19;
       msg |= 0x1 << 27;
     }
 
-    if (conf_.get<bool>("enable_int_trg", false)) {
+    if (conf.get<bool>("enable_int_trg", false)) {
       msg |= 0x1 << 2;
       msg |= 0x1 << 10;
       msg |= 0x1 << 18;
@@ -553,7 +562,7 @@ void Sis3316::LoadConfig()
   }
 
   // Enable (global) external trigger)
-  if (conf_.get<bool>("enable_ext_trg", true)) {
+  if (conf.get<bool>("enable_ext_trg", true)) {
     msg = 0x100;
 
   } else {

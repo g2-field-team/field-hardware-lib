@@ -71,7 +71,7 @@ public:
 private:
   
   std::chrono::high_resolution_clock::time_point t0_;
-  boost::property_tree::ptree conf_;
+  std::string conf_file_;
 
   const static uint kMaxQueueSize_ = 100;
   
