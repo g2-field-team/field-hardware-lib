@@ -28,6 +28,12 @@ endif
 # Add local include directory
 CPPFLAGS += -Iinclude
 
+# Check for UPS boost
+ifdef BOOST_INC
+	CPPFLAGS += -I$(BOOST_INC)
+	LIBFLAGS += -L$(BOOST_LIB)
+endif
+
 # ROOT libs and flags
 CXXFLAGS += $(shell root-config --cflags)
 LIBS += $(shell root-config --libs)
