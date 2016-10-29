@@ -24,7 +24,6 @@
 #define MAX_NMR_SAMPLES		24000
 #define MAX_BARCODE_SAMPLES	3000
 #define MAX_CTRL_DATA 0x100
-#define BARCODE_CH_NUM	6
 
 namespace TrolleyInterface{
   //==============================================================================
