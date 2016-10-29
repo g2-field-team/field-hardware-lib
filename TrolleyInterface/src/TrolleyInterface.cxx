@@ -128,7 +128,7 @@ namespace TrolleyInterface{
     return errorNoError;
   }			
 
-  int FileOpen(char * filename)
+  int FileOpen(const char * filename)
   {
     ReadFromFile = true;
     FileStream.open(filename,ios::binary);

@@ -164,7 +164,7 @@ namespace TrolleyInterface{
   void RegInit					(void);
   int DeviceConnect				(char* deviceIP);
   int DeviceDisconnect			(void);
-  int FileOpen(char * filename);
+  int FileOpen(const char * filename);
   int FileClose();
 
   // Slow Control Command Functions
