@@ -5,6 +5,8 @@
 #include "TString.h"
 #include <cstring>
 
+#define BARCODE_CH_NUM 6
+
 using namespace std;
 using namespace TrolleyInterface;
 
