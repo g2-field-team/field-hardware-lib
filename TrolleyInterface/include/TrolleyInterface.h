@@ -107,6 +107,10 @@ namespace TrolleyInterface{
     errorEventTooMany		= -203,
     errorEventHeader		= -204,
 
+    // File Error
+    errorEOF			= -300,
+    errorFileFail		= -301,
+
     errorUnknown			= -1000,
   };
 
@@ -160,6 +164,8 @@ namespace TrolleyInterface{
   void RegInit					(void);
   int DeviceConnect				(char* deviceIP);
   int DeviceDisconnect			(void);
+  int FileOpen(char * filename);
+  int FileClose();
 
   // Slow Control Command Functions
   int DeviceRead		(unsigned int address, unsigned int* value);

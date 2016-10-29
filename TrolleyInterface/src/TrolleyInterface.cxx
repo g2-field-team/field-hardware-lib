@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <string.h>
 
 #include "TrolleyInterface.h"
@@ -40,6 +41,8 @@ namespace TrolleyInterface{
   int tcpControlCallbackFunction (unsigned handle, int xType, int errCode, void *callbackData) {return 0;};	// Place holder function
   unsigned int tcpControlTimeout 		= 5000;
   unsigned int tcpDataHandle;
+  ifstream FileStream;
+  bool ReadFromFile = false;
   int tcpDataCallbackFunction (unsigned handle, int xType, int errCode, void *callbackData) {return 0;};   	// Place holder function
   unsigned int tcpDataTimeout 			= 5000;
 
@@ -69,6 +72,7 @@ namespace TrolleyInterface{
   int DeviceConnect (char* deviceIP)
   {
     int error = 0;
+    ReadFromFile = false;
 
     sprintf(DeviceIP,deviceIP);
 
@@ -123,6 +127,23 @@ namespace TrolleyInterface{
 
     return errorNoError;
   }			
+
+  int FileOpen(char * filename)
+  {
+    ReadFromFile = true;
+    FileStream.open(filename,ios::binary);
+    if (!FileStream.is_open()){
+      return errorDataConnect;
+    }
+    return errorNoError;
+  }
+
+  int FileClose()
+  {
+    ReadFromFile = false;
+    FileStream.close();
+    return errorNoError;
+  }
 
   int DevicePurgeComm (void)
   {
@@ -181,8 +202,19 @@ namespace TrolleyInterface{
       }
 
       // Grab the data from the TCP driver
-      rxStatus = ClientTCPRead(tcpDataHandle, &preable_sync_buffer, dataExpected, tcpDataTimeout);
-      error = ClientTCPRead_ErrorCheck(rxStatus);
+      if (ReadFromFile){
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
+	FileStream.read((char *)&preable_sync_buffer,dataExpected);
+	if (FileStream.fail()){
+	  return errorFileFail;
+	}
+	rxStatus = dataExpected;
+      }else{
+	rxStatus = ClientTCPRead(tcpDataHandle, &preable_sync_buffer, dataExpected, tcpDataTimeout);
+	error = ClientTCPRead_ErrorCheck(rxStatus);
+      }
       if (error != errorNoError) break;
 
       dataReceived += rxStatus;
@@ -313,8 +345,19 @@ namespace TrolleyInterface{
     dataExpected = sizeof(unsigned int);
     do
     {
-      rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
-      error = ClientTCPRead_ErrorCheck(rxStatus);
+      if (ReadFromFile){
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
+	FileStream.read((char *)(&(((unsigned char*)data)[dataReceived])),dataExpected);
+	if (FileStream.fail()){
+	  return errorFileFail;
+	}
+	rxStatus = dataExpected;
+      }else{
+	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
+	error = ClientTCPRead_ErrorCheck(rxStatus);
+      }
       if (error != errorNoError) break;
 
       dataReceived += rxStatus; 
@@ -341,8 +384,19 @@ namespace TrolleyInterface{
     // Fetch Event Payload
     do
     {
-      rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
-      error = ClientTCPRead_ErrorCheck(rxStatus);
+      if (ReadFromFile){
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
+	FileStream.read((char *)(&(((unsigned char*)data)[dataReceived])),dataExpected);
+	if (FileStream.fail()){
+	  return errorFileFail;
+	}
+	rxStatus = dataExpected;
+      }else{
+	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
+	error = ClientTCPRead_ErrorCheck(rxStatus);
+      }
       if (error != errorNoError) break;
 
       dataReceived += rxStatus; 
