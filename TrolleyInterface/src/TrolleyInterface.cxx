@@ -211,6 +211,7 @@ namespace TrolleyInterface{
 	  return errorFileFail;
 	}
 	rxStatus = dataExpected;
+	error = errorNoError;
       }else{
 	rxStatus = ClientTCPRead(tcpDataHandle, &preable_sync_buffer, dataExpected, tcpDataTimeout);
 	error = ClientTCPRead_ErrorCheck(rxStatus);
@@ -354,6 +355,7 @@ namespace TrolleyInterface{
 	  return errorFileFail;
 	}
 	rxStatus = dataExpected;
+	error = errorNoError;
       }else{
 	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
 	error = ClientTCPRead_ErrorCheck(rxStatus);
@@ -393,6 +395,7 @@ namespace TrolleyInterface{
 	  return errorFileFail;
 	}
 	rxStatus = dataExpected;
+	error = errorNoError;
       }else{
 	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
 	error = ClientTCPRead_ErrorCheck(rxStatus);

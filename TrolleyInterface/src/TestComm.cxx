@@ -5,80 +5,54 @@
 #include "TString.h"
 #include <cstring>
 
-#define BARCODE_CH_NUM 6
+#define TRLY_NMR_LENGTH 24000
+#define TRLY_BARCODE_LENGTH 3000 //ALL CHANNELS
+#define TRLY_BARCODE_CHANNELS 6
+#define TRLY_MONITOR_LENGTH 3000
 
 using namespace std;
 using namespace TrolleyInterface;
 
-typedef struct _TrlyDataStruct{
-  //NMR
-  unsigned long int NMRTimeStamp;
-  unsigned short ProbeNumber;
-  unsigned short NSample_NMR;
-  short NMRSamples[MAX_NMR_SAMPLES];
+struct trolley_nmr_t{
+  unsigned long int gps_clock;
+  unsigned short probe_index;
+  unsigned short length;
+  short trace[TRLY_NMR_LENGTH];
+};
 
-  //Barcode
-  unsigned long int BarcodeTimeStamp;
-  unsigned short NSample_Barcode_PerCh;
-  short BarcodeSamples[MAX_BARCODE_SAMPLES];
+struct trolley_barcode_t{
+  unsigned long int gps_clock;
+  unsigned short length_per_ch;
+  unsigned short traces[TRLY_BARCODE_LENGTH]; //All channels
+};
 
-  //Monitor
-  bool BarcodeError;
-  short BCToNMROffset;
-  short VMonitor1;
-  short VMonitor2;
+struct trolley_monitor_t{
+  unsigned long int gps_clock_cycle_start;
+  unsigned int PMonitorVal;
+  unsigned int PMonitorTemp;
+  unsigned int RFPower1;
+  unsigned int RFPower2;
   unsigned short TMonitorIn;
   unsigned short TMonitorExt1;
   unsigned short TMonitorExt2;
   unsigned short TMonitorExt3;
-  unsigned short PressureSensorCal[7];
-  unsigned int PMonitorVal;
-  unsigned int PMonitorTemp;
+  unsigned short V1Min;
+  unsigned short V1Max;
+  unsigned short V2Min;
+  unsigned short V2Max;
+  unsigned short length_per_ch;
+  unsigned short trace_VMonitor1[TRLY_MONITOR_LENGTH];
+  unsigned short trace_VMonitor2[TRLY_MONITOR_LENGTH];
+};
 
-  //Register Readbacks
-  unsigned short BarcodeRegisters[5];
-  unsigned short TrlyRegisters[16];
-
-  //Constructor
-  _TrlyDataStruct(){}
-  _TrlyDataStruct(const _TrlyDataStruct& obj)
-  {
-    //NMR
-    NMRTimeStamp = obj.NMRTimeStamp;
-    ProbeNumber = obj.ProbeNumber;
-    NSample_NMR = obj.NSample_NMR;
-    for (int i=0;i<MAX_NMR_SAMPLES;i++){
-      NMRSamples[i] = obj.NMRSamples[i];
-    }
-
-    //Barcode
-    BarcodeTimeStamp = obj.BarcodeTimeStamp;
-    NSample_Barcode_PerCh = obj.NSample_Barcode_PerCh;
-    for (int i=0;i<MAX_BARCODE_SAMPLES;i++){
-      BarcodeSamples[i] = obj.BarcodeSamples[i];
-    }
-    //Monitor
-    BarcodeError = obj.BarcodeError;
-    BCToNMROffset = obj.BCToNMROffset;
-    VMonitor1 = obj.VMonitor1;
-    VMonitor2 = obj.VMonitor2;
-    TMonitorIn = obj.TMonitorIn;
-    TMonitorExt1 = obj.TMonitorExt1;
-    TMonitorExt2 = obj.TMonitorExt2;
-    TMonitorExt3 = obj.TMonitorExt3;
-    for(int i=0;i<7;i++){
-      PressureSensorCal[i] = obj.PressureSensorCal[i];
-    }
-    PMonitorVal = obj.PMonitorVal;
-    PMonitorTemp = obj.PMonitorTemp;
-    for(int i=0;i<5;i++){
-      BarcodeRegisters[i] = obj.BarcodeRegisters[i];
-    }
-    for(int i=0;i<16;i++){
-      TrlyRegisters[i] = obj.TrlyRegisters[i];
-    }
-  }
-}TrlyDataStruct;
+bool BarcodeError;
+bool PowersupplyStatus[3];
+bool TemperatureInterupt;
+unsigned short PressureSensorCal[7];
+unsigned int NMRCheckSum;
+unsigned int FrameCheckSum;
+bool NMRCheckSumPassed;
+bool FrameCheckSumPassed;
 
 
 int main(int argc,char **argv){
@@ -90,6 +64,8 @@ int main(int argc,char **argv){
   if (argc>2){
     NBarcodes = atoi(argv[2]);
   }
+
+  /*
   int err = DeviceConnect("192.168.1.123");
   cout <<err<<endl;
   if (err<0)return -1;
@@ -103,14 +79,19 @@ int main(int argc,char **argv){
   char buffer[1000];
 //  err = DataReceive(buffer);
 //  cout <<err<<endl;
+*/
+  //Connect to file
+  const char * filename = "/home/rhong/gm2/g2-field-team/field-daq/resources/NMRDataTemp/data_NMR_61682000Hz_11.70dbm-2016-10-27_19-36-42.dat"; 
+  int err = FileOpen(filename);
 
+  //cout <<err<<endl;
   //Try to get some data
 
   int LastFrameNumber = 0;
   int FrameNumber = 0;
   int FrameSize = 0;
   //Frame buffer
-  short* Frame = new short[MAX_PAYLOAD_DATA/sizeof(short)];
+  unsigned short* Frame = new unsigned short[MAX_PAYLOAD_DATA/sizeof(unsigned short)];
 
   //Read first frame and sync
   int rc = DataReceive((void *)Frame);
@@ -139,6 +120,7 @@ int main(int argc,char **argv){
   int i=0;
   int gIndex = 0;
   int NCycle = NPulses;
+  int iNMR=0;
   if (NBarcodes>NCycle)NCycle = NBarcodes;
   while (i<NCycle){
     //Read Frame
@@ -151,80 +133,90 @@ int main(int argc,char **argv){
     memcpy(&FrameNumber,&(Frame[9]),sizeof(int));
     //    FrameSize = *((int *)(&(Frame[7])));
     memcpy(&FrameSize,&(Frame[7]),sizeof(int));
-//    cout <<"Frame number = "<<FrameNumber<<" , Last "<<LastFrameNumber<<endl;
-//    cout <<"data read "<<rc<<", from Frame data read="<<FrameSize<<endl;
-
+ /*   cout <<"Frame number = "<<FrameNumber<<" , Last "<<LastFrameNumber<<endl;
+    cout <<"data read "<<rc<<", from Frame data read="<<FrameSize<<endl;
+    cout<<"number of NMR samples "<<Frame[12]<<endl;
+    cout<<"number of Barcode samples "<<Frame[13]<<endl;
+*/
     LastFrameNumber=FrameNumber;
-    //Translate buffer into TrlyDataStruct
-    TrlyDataStruct* TrlyDataUnit = new TrlyDataStruct;
 
-//    TrlyDataUnit->NMRTimeStamp = *((long int *)(&(Frame[32])));
-    memcpy(&(TrlyDataUnit->NMRTimeStamp),&(Frame[32]),sizeof(unsigned long int));
-    TrlyDataUnit->ProbeNumber = short(0x1F & Frame[11]);
-    TrlyDataUnit->NSample_NMR = Frame[12];
-    short NSamNMR = Frame[12];
-/*    cout<<"NMR TimeStamp "<<TrlyDataUnit->NMRTimeStamp<<" ; ";
-    cout<<"number of NMR samples "<<TrlyDataUnit->NSample_NMR<<endl;
-*/
-    for (short ii=0;ii<NSamNMR;ii++){
-      TrlyDataUnit->NMRSamples[ii] = Frame[64+ii];
-    }
-    //TrlyDataUnit->BarcodeTimeStamp = *((long int *)(&(Frame[36]))) ;
-    memcpy(&(TrlyDataUnit->BarcodeTimeStamp),&(Frame[36]),sizeof(unsigned long int));
-    TrlyDataUnit->NSample_Barcode_PerCh = Frame[13];
-    short NSamBarcode = Frame[13]*BARCODE_CH_NUM;
-/*    cout<<"Barcode TimeStamp "<<TrlyDataUnit->BarcodeTimeStamp<<" ; ";
-    cout<<"number of Barcode Channels "<<BARCODE_CH_NUM<<" ; ";
-    cout<<"number of Barcode samples per Ch "<<TrlyDataUnit->NSample_Barcode_PerCh<<endl;
-*/
+    trolley_nmr_t* TrlyNMRDataUnit = new trolley_nmr_t;
+    trolley_barcode_t* TrlyBarcodeDataUnit = new trolley_barcode_t;
+    trolley_monitor_t* TrlyMonitorDataUnit = new trolley_monitor_t;
+
+    memcpy(&(TrlyNMRDataUnit->gps_clock),&(Frame[38]),sizeof(unsigned long int));
+    TrlyNMRDataUnit->probe_index = (0x1F & Frame[11]);
+    TrlyNMRDataUnit->length = Frame[12];
+    unsigned short NSamNMR = Frame[12];
     //Check if this is larger than the MAX
-    for (short ii=0;ii<NSamBarcode;ii++){
-      TrlyDataUnit->BarcodeSamples[ii] = Frame[64+NSamNMR+ii];
+    if (NSamNMR>TRLY_NMR_LENGTH){
+      NSamNMR = TRLY_NMR_LENGTH;
     }
-    TrlyDataUnit->BarcodeError = bool(0x100 & Frame[11]);
-    TrlyDataUnit->BCToNMROffset = Frame[14];
-    TrlyDataUnit->VMonitor1 = Frame[15];
-    TrlyDataUnit->VMonitor2 = Frame[16];
-    TrlyDataUnit->TMonitorIn = Frame[17];
-    TrlyDataUnit->TMonitorExt1 = Frame[18];
-    TrlyDataUnit->TMonitorExt2 = Frame[19];
-    TrlyDataUnit->TMonitorExt3 = Frame[20];
-    if (i==0){
-      cout <<"Offset " <<TrlyDataUnit->BCToNMROffset<<" "<<(int(TrlyDataUnit->BarcodeTimeStamp)-int(TrlyDataUnit->NMRTimeStamp))<<endl;
-      cout <<"VMonitor " <<TrlyDataUnit->VMonitor1<<" "<<TrlyDataUnit->VMonitor2<<endl;
-      cout <<"TMonitors " <<TrlyDataUnit->TMonitorExt1<<" "<<TrlyDataUnit->TMonitorExt2<<endl;
-      cout <<Frame[43]<<endl;
+    for (unsigned short ii=0;ii<NSamNMR;ii++){
+      TrlyNMRDataUnit->trace[ii] = (short)Frame[64+ii];
     }
+
+    memcpy(&(TrlyBarcodeDataUnit->gps_clock),&(Frame[42]),sizeof(unsigned long int));
+    TrlyBarcodeDataUnit->length_per_ch = Frame[13];
+    unsigned short NSamBarcode = Frame[13]*TRLY_BARCODE_CHANNELS;
+    //Check if this is larger than the MAX
+    if (NSamBarcode>TRLY_BARCODE_LENGTH){
+      NSamBarcode = TRLY_BARCODE_LENGTH;
+    }
+    for (unsigned short ii=0;ii<NSamBarcode;ii++){
+      TrlyBarcodeDataUnit->traces[ii] = Frame[64+Frame[12]+ii];
+    }
+    memcpy(&(TrlyMonitorDataUnit->gps_clock_cycle_start),&(Frame[34]),sizeof(unsigned long int));
+    memcpy(&(TrlyMonitorDataUnit->PMonitorVal),&(Frame[30]),sizeof(int));
+    memcpy(&(TrlyMonitorDataUnit->PMonitorTemp),&(Frame[32]),sizeof(int));
+    memcpy(&(TrlyMonitorDataUnit->RFPower1),&(Frame[60]),sizeof(int));
+    memcpy(&(TrlyMonitorDataUnit->RFPower2),&(Frame[62]),sizeof(int));
+    TrlyMonitorDataUnit->TMonitorIn = Frame[19];
+    TrlyMonitorDataUnit->TMonitorExt1 = Frame[20];
+    TrlyMonitorDataUnit->TMonitorExt2 = Frame[21];
+    TrlyMonitorDataUnit->TMonitorExt3 = Frame[22];
+    TrlyMonitorDataUnit->V1Min = Frame[15];
+    TrlyMonitorDataUnit->V1Max = Frame[16];
+    TrlyMonitorDataUnit->V2Min = Frame[17];
+    TrlyMonitorDataUnit->V2Max = Frame[18];
+    TrlyMonitorDataUnit->length_per_ch = Frame[13];
+    for (unsigned short ii=0;ii<Frame[13];ii++){
+      TrlyMonitorDataUnit->trace_VMonitor1[ii] = Frame[64+Frame[12]+Frame[13]*TRLY_BARCODE_CHANNELS+ii];
+    }
+    for (unsigned short ii=0;ii<Frame[13];ii++){
+      TrlyMonitorDataUnit->trace_VMonitor1[ii] = Frame[64+NSamNMR+NSamBarcode+Frame[13]+ii];
+    }
+    BarcodeError = bool(0x100 & Frame[11]);
+    TemperatureInterupt = bool(0x200 & Frame[11]);
+    PowersupplyStatus[0] = bool(0x400 & Frame[11]);
+    PowersupplyStatus[1] = bool(0x800 & Frame[11]);
+    PowersupplyStatus[2] = bool(0x1000 & Frame[11]);
+    memcpy(&(NMRCheckSum),&(Frame[46]),sizeof(int));
+    memcpy(&(FrameCheckSum),&(Frame[64+NSamNMR+NSamBarcode+Frame[13]*2]),sizeof(int));
     for (short ii=0;ii<7;ii++){
-      TrlyDataUnit->PressureSensorCal[ii] = Frame[21+ii];;
+      PressureSensorCal[ii] = Frame[23+ii];;
     }
-//    TrlyDataUnit->PMonitorVal = *((int *)(&(Frame[28]))) ;
-//    TrlyDataUnit->PMonitorTemp = *((int *)(&(Frame[30])));
-    memcpy(&(TrlyDataUnit->PMonitorVal),&(Frame[28]),sizeof(int));
-    memcpy(&(TrlyDataUnit->PMonitorTemp),&(Frame[30]),sizeof(int));
-    for (short ii=0;ii<5;ii++){
-      TrlyDataUnit->BarcodeRegisters[ii] = Frame[43+ii];
-    }
-    for (short ii=0;ii<16;ii++){
-      TrlyDataUnit->TrlyRegisters[ii] = Frame[48+ii];
-    }
+
     //Fill Graph
-    if (i<NPulses){
-      for (int j=0;j<TrlyDataUnit->NSample_NMR;j++){
-	gArray[i]->SetPoint(j,j,TrlyDataUnit->NMRSamples[j]);
+    if (iNMR<NPulses && Frame[12]>0){
+      for (int j=0;j<TrlyNMRDataUnit->length;j++){
+	gArray[iNMR]->SetPoint(j,j,TrlyNMRDataUnit->trace[j]);
       }
+      iNMR++;
     }
     if (i<NBarcodes){
       for (short ii=0;ii<Frame[13];ii++){
-	double BTime = TrlyDataUnit->BarcodeTimeStamp*50/1000000.0+0.1*ii;
+	double BTime = TrlyBarcodeDataUnit->gps_clock*50/1000000.0+0.1*ii;
 	for (short jj=0;jj<6;jj++){
-	  gBarcodes[jj]->SetPoint(gIndex,BTime,TrlyDataUnit->BarcodeSamples[jj*Frame[13]+ii]);
+	  gBarcodes[jj]->SetPoint(gIndex,BTime,TrlyBarcodeDataUnit->traces[jj*Frame[13]+ii]);
 	}
 	gIndex++;
       }
     }
 
-    delete TrlyDataUnit;
+    delete TrlyNMRDataUnit;
+    delete TrlyBarcodeDataUnit;
+    delete TrlyMonitorDataUnit;
     i++;
   }
 
@@ -238,8 +230,9 @@ int main(int argc,char **argv){
   f.Close();
 
   //Disconnect
-  err = DeviceDisconnect();
-  cout <<err<<endl;
+  //err = DeviceDisconnect();
+  FileClose();
+  //cout <<err<<endl;
   delete []Frame;
   for (int j=0;j<NPulses;j++){
     delete gArray[j];
