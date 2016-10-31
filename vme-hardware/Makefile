@@ -31,6 +31,8 @@ CPPFLAGS += -Iinclude
 # ROOT libs and flags
 CXXFLAGS += $(shell root-config --cflags)
 LIBS += $(shell root-config --libs)
+LIBS += -L$(BOOST_LIB)
+CXXFLAGS += -I$(BOOST_INC)
 
 ifeq ($(shell uname -s), Darwin)
 	LIBFLAGS = -shared -Wl,-install_name,$(SONAME).$(MAJOR) 

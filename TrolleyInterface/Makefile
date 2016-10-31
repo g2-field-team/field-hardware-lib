@@ -5,6 +5,11 @@ LIB_DIR = ./lib
 BUILD_DIR = ./build
 BIN_DIR = ./bin
 
+# Locations and default files
+PREFIX=/usr/local
+LIBINSTALLDIR=$(PREFIX)/lib
+INCINSTALLDIR=$(PREFIX)/include/g2field
+
 DEPS=$(INC_DIR)/TCPDrivers.h $(INC_DIR)/TrolleyInterface.h
 CFLAGS = -I$(INC_DIR)
 LIBFLAGS = -L$(LIB_DIR) -lTrolleyInterface
@@ -34,5 +39,8 @@ clean:
 	rm $(BUILD_DIR)/* $(BIN_DIR)/* $(LIB_DIR)/*
 
 install:
-	ln -sf `pwd`/$(LIB_DIR)/libTrolleyInterface.so ../libs/
-	ln -sf `pwd`/$(INC_DIR)/TrolleyInterface.h ../includes/
+	mkdir -p $(LIBINSTALLDIR)
+	install $(LIB_DIR)/* $(LIBINSTALLDIR)
+
+	mkdir -p $(INCINSTALLDIR)
+	install $(INC_DIR)/*.h $(INCINSTALLDIR)
