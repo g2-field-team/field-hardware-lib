@@ -207,6 +207,9 @@ namespace TrolleyInterface{
 	  return errorEOF;
 	}
 	FileStream.read((char *)&preable_sync_buffer,dataExpected);
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
 	if (FileStream.fail()){
 	  return errorFileFail;
 	}
@@ -351,6 +354,9 @@ namespace TrolleyInterface{
 	  return errorEOF;
 	}
 	FileStream.read((char *)(&(((unsigned char*)data)[dataReceived])),dataExpected);
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
 	if (FileStream.fail()){
 	  return errorFileFail;
 	}
@@ -391,6 +397,9 @@ namespace TrolleyInterface{
 	  return errorEOF;
 	}
 	FileStream.read((char *)(&(((unsigned char*)data)[dataReceived])),dataExpected);
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
 	if (FileStream.fail()){
 	  return errorFileFail;
 	}

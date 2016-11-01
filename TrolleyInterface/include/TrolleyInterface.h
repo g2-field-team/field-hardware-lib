@@ -131,7 +131,7 @@ namespace TrolleyInterface{
     unsigned int		data[MAX_CTRL_DATA];
   } Ctrl_Packet;
 
-  struct {
+  struct _trolleyReg{
     // Registers in the ARM Processor			Address
     unsigned int comm_arm_fw_build;					//	0x00000010
     unsigned int IP4Address;						//	0x00000100

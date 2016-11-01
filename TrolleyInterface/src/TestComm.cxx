@@ -65,25 +65,28 @@ int main(int argc,char **argv){
     NBarcodes = atoi(argv[2]);
   }
 
-  /*
+ 
   int err = DeviceConnect("192.168.1.123");
-  cout <<err<<endl;
   if (err<0)return -1;
+  cout <<"connection good"<<endl;
   //Read device
   unsigned int val;
   err = DeviceRead(0x40001060,&val);
   unsigned int LEDV = val & 0x03FF;
   unsigned int LEDDisable = val & 0x0400;
   cout <<err<<" "<<LEDV<< " "<<LEDDisable<<endl;
+  DevicePurgeData();
+  DeviceWriteMask(0x40000944,0x00000001,0x00000000);
+
   //Receive Data
   char buffer[1000];
 //  err = DataReceive(buffer);
 //  cout <<err<<endl;
-*/
-  //Connect to file
-  const char * filename = "/home/rhong/gm2/g2-field-team/field-daq/resources/NMRDataTemp/data_NMR_61682000Hz_11.70dbm-2016-10-27_19-36-42.dat"; 
-  int err = FileOpen(filename);
 
+  //Connect to file
+/*  const char * filename = "/home/newg2/Applications/field-daq/resources/NMRDataTemp/data_NMR_61682000Hz_11.70dbm-2016-10-27_19-36-42.dat"; 
+  int err = FileOpen(filename);
+*/
   //cout <<err<<endl;
   //Try to get some data
 
@@ -99,6 +102,7 @@ int main(int argc,char **argv){
     cout <<"Data Error code "<<rc<<endl;
     return -1;
   }
+  cout <<"first data"<<endl;
 //  LastFrameNumber = *((int *)(&(Frame[9])));
   memcpy(&LastFrameNumber,&(Frame[9]),sizeof(int));
 //  FrameSize = *((int *)(&(Frame[7])));
@@ -129,15 +133,16 @@ int main(int argc,char **argv){
       cout <<"Data Error code "<<rc<<endl;
       return -1;
     }
+    cout << i<<" "<<NCycle<<endl;
   //  FrameNumber = *((int *)(&(Frame[9])));
     memcpy(&FrameNumber,&(Frame[9]),sizeof(int));
     //    FrameSize = *((int *)(&(Frame[7])));
     memcpy(&FrameSize,&(Frame[7]),sizeof(int));
- /*   cout <<"Frame number = "<<FrameNumber<<" , Last "<<LastFrameNumber<<endl;
+    cout <<"Frame number = "<<FrameNumber<<" , Last "<<LastFrameNumber<<endl;
     cout <<"data read "<<rc<<", from Frame data read="<<FrameSize<<endl;
     cout<<"number of NMR samples "<<Frame[12]<<endl;
     cout<<"number of Barcode samples "<<Frame[13]<<endl;
-*/
+
     LastFrameNumber=FrameNumber;
 
     trolley_nmr_t* TrlyNMRDataUnit = new trolley_nmr_t;
@@ -228,10 +233,20 @@ int main(int argc,char **argv){
     gBarcodes[j]->Write();
   }
   f.Close();
+  //Test file operations
+  while(1){
+    int rc = DataReceive((void *)Frame);
+    if (rc<0){
+      cout <<"Data Error code "<<rc<<endl;
+      return -1;
+    }
+  }
 
   //Disconnect
-  //err = DeviceDisconnect();
-  FileClose();
+  DeviceWriteMask(0x40000944,0x00000001,0x00000000);
+  err = DeviceDisconnect();
+
+//  FileClose();
   //cout <<err<<endl;
   delete []Frame;
   for (int j=0;j<NPulses;j++){

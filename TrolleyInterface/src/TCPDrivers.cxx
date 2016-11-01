@@ -35,7 +35,7 @@ int ConnectToTCPServer(unsigned int *conversationHandle, unsigned int portNumber
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0){
     error("ERROR opening socket");
-    *conversationHandle=0;
+    *conversationHandle=1;
     return kTCP_UnableToEstablishConnection;
   }
 
@@ -43,7 +43,7 @@ int ConnectToTCPServer(unsigned int *conversationHandle, unsigned int portNumber
   server = gethostbyname(serverHostName);
   if (server == NULL) {
     fprintf(stderr,"ERROR, no such host\n");
-    *conversationHandle=0;
+    *conversationHandle=1;
     return kTCP_ServerNotRegistered;
   }
   bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -75,13 +75,16 @@ int ConnectToTCPServer(unsigned int *conversationHandle, unsigned int portNumber
     }else{
       error("ERROR connecting");
       fprintf(stderr,"error number %d\n",so_error);
-      *conversationHandle=0;
+      *conversationHandle=1;
       return kTCP_FailedToConnect;
     }
   }else if (rc==0){
     printf("Connect time out: %d ms.\n",timeOut);
-    *conversationHandle=0;
+    *conversationHandle=1;
     return kTCP_TimeOutErr;
+  }else{
+    *conversationHandle=1;
+    return kTCP_FailedToConnect;
   }
   return kTCP_NoError;
 }
