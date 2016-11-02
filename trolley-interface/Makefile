@@ -12,12 +12,12 @@ INCINSTALLDIR=$(PREFIX)/include/g2field
 
 DEPS=$(INC_DIR)/TCPDrivers.h $(INC_DIR)/TrolleyInterface.h
 CFLAGS = -I$(INC_DIR) -Wl,-rpath,$(LIB_DIR)
-LIBFLAGS = -L$(LIB_DIR) -lTrolleyInterface
+LIBFLAGS = -L$(LIB_DIR) -ltrolleyinterface
 
-all: $(BIN_DIR)/TestComm $(LIB_DIR)/libTrolleyInterface.so
+all: $(BIN_DIR)/TestComm $(LIB_DIR)/libtrolleyinterface.so
 
 
-$(LIB_DIR)/libTrolleyInterface.so: $(BUILD_DIR)/TCPDrivers.o $(BUILD_DIR)/TrolleyInterface.o
+$(LIB_DIR)/libtrolleyinterface.so: $(BUILD_DIR)/TCPDrivers.o $(BUILD_DIR)/TrolleyInterface.o
 	$(CXX) -shared -fPIC -o $@ $^ 
 
 $(BUILD_DIR)/TCPDrivers.o: $(SRC_DIR)/TCPDrivers.cxx $(DEPS)
@@ -29,7 +29,7 @@ $(BUILD_DIR)/TrolleyInterface.o: $(SRC_DIR)/TrolleyInterface.cxx $(DEPS)
 $(BUILD_DIR)/TestComm.o: $(SRC_DIR)/TestComm.cxx $(DEPS)
 	$(CXX) -o $@ -fPIC -c $< $(CFLAGS) `root-config --cflags`
 
-$(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o /usr/local/lib/libTrolleyInterface.so
+$(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o $(LIB_DIR)/libtrolleyinterface.so
 	$(CXX) -o $@ $< $(CFLAGS)  $(LIBFLAGS) `root-config --libs`
 
 

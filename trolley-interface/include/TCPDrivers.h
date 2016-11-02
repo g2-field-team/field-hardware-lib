@@ -41,7 +41,7 @@ namespace TCPDrivers{
 typedef int (*tcpFuncPtr)(unsigned, int, int, void *);
 
 //Connect TCP server
-int ConnectToTCPServer (unsigned int *conversationHandle, unsigned int portNumber, char serverHostName[], tcpFuncPtr callbackFunction=NULL, void *callbackData = NULL, unsigned int timeOut=100);
+int ConnectToTCPServer (unsigned int *conversationHandle, unsigned int portNumber, const char* serverHostName, tcpFuncPtr callbackFunction=NULL, void *callbackData = NULL, unsigned int timeOut=100);
 
 //Disconnect from TCP server
 int DisconnectFromTCPServer (unsigned int conversationHandle);

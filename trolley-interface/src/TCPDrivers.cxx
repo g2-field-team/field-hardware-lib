@@ -24,7 +24,7 @@ void error(const char *msg)
 
 namespace TCPDrivers{
 //Connect TCP server
-int ConnectToTCPServer(unsigned int *conversationHandle, unsigned int portNumber, char serverHostName[], tcpFuncPtr callbackFunction, void *callbackData, unsigned int timeOut)
+int ConnectToTCPServer(unsigned int *conversationHandle, unsigned int portNumber, const char* serverHostName, tcpFuncPtr callbackFunction, void *callbackData, unsigned int timeOut)
 {
   int sockfd, n;
   struct sockaddr_in serv_addr;
