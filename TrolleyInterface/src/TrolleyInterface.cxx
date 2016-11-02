@@ -69,7 +69,7 @@ namespace TrolleyInterface{
   // Connection Functions
   //==============================================================================
 
-  int DeviceConnect (char* deviceIP)
+  int DeviceConnect (const char * deviceIP)
   {
     int error = 0;
     ReadFromFile = false;
