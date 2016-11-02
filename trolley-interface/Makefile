@@ -5,8 +5,13 @@ LIB_DIR = ./lib
 BUILD_DIR = ./build
 BIN_DIR = ./bin
 
+# Locations and default files
+PREFIX=/usr/local
+LIBINSTALLDIR=$(PREFIX)/lib
+INCINSTALLDIR=$(PREFIX)/include/g2field
+
 DEPS=$(INC_DIR)/TCPDrivers.h $(INC_DIR)/TrolleyInterface.h
-CFLAGS = -I$(INC_DIR)
+CFLAGS = -I$(INC_DIR) -Wl,-rpath,$(LIB_DIR)
 LIBFLAGS = -L$(LIB_DIR) -lTrolleyInterface
 
 all: $(BIN_DIR)/TestComm $(LIB_DIR)/libTrolleyInterface.so
@@ -24,8 +29,9 @@ $(BUILD_DIR)/TrolleyInterface.o: $(SRC_DIR)/TrolleyInterface.cxx $(DEPS)
 $(BUILD_DIR)/TestComm.o: $(SRC_DIR)/TestComm.cxx $(DEPS)
 	$(CXX) -o $@ -fPIC -c $< $(CFLAGS) `root-config --cflags`
 
-$(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o $(LIB_DIR)/libTrolleyInterface.so
-	$(CXX) -o $@ $< $(CFLAGS) $(LIBFLAGS) `root-config --libs`
+$(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o /usr/local/lib/libTrolleyInterface.so
+	$(CXX) -o $@ $< $(CFLAGS)  $(LIBFLAGS) `root-config --libs`
+
 
 .PHONY: clean
 .PHONY: install
@@ -34,5 +40,8 @@ clean:
 	rm $(BUILD_DIR)/* $(BIN_DIR)/* $(LIB_DIR)/*
 
 install:
-	ln -sf `pwd`/$(LIB_DIR)/libTrolleyInterface.so /usr/local/lib/
-	ln -sf `pwd`/$(INC_DIR)/TrolleyInterface.h /usr/local/include/
+	mkdir -p $(LIBINSTALLDIR)
+	install $(LIB_DIR)/* $(LIBINSTALLDIR)
+
+	mkdir -p $(INCINSTALLDIR)
+	install $(INC_DIR)/*.h $(INCINSTALLDIR)
