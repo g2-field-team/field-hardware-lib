@@ -65,7 +65,7 @@ int main(int argc,char **argv){
     NBarcodes = atoi(argv[2]);
   }
 
- 
+/* 
   int err = DeviceConnect("192.168.1.123");
   if (err<0)return -1;
   cout <<"connection good"<<endl;
@@ -77,16 +77,16 @@ int main(int argc,char **argv){
   cout <<err<<" "<<LEDV<< " "<<LEDDisable<<endl;
   DevicePurgeData();
   DeviceWriteMask(0x40000944,0x00000001,0x00000000);
-
+*/
   //Receive Data
   char buffer[1000];
 //  err = DataReceive(buffer);
 //  cout <<err<<endl;
 
   //Connect to file
-/*  const char * filename = "/home/newg2/Applications/field-daq/resources/NMRDataTemp/data_NMR_61682000Hz_11.70dbm-2016-10-27_19-36-42.dat"; 
+  const char * filename = "/home/newg2/Applications/field-daq/resources/NMRDataTemp/data_NMR_61682000Hz_11.70dbm-2016-10-27_19-36-42.dat"; 
   int err = FileOpen(filename);
-*/
+
   //cout <<err<<endl;
   //Try to get some data
 
@@ -121,6 +121,7 @@ int main(int argc,char **argv){
     gBarcodes[j]->SetName(Form("Barcode%d",j));
   }
   //Readout loop
+  vector <int> zeros;
   int i=0;
   int gIndex = 0;
   int NCycle = NPulses;
@@ -133,16 +134,16 @@ int main(int argc,char **argv){
       cout <<"Data Error code "<<rc<<endl;
       return -1;
     }
-    cout << i<<" "<<NCycle<<endl;
+ //   cout << i<<" "<<NCycle<<endl;
   //  FrameNumber = *((int *)(&(Frame[9])));
     memcpy(&FrameNumber,&(Frame[9]),sizeof(int));
     //    FrameSize = *((int *)(&(Frame[7])));
     memcpy(&FrameSize,&(Frame[7]),sizeof(int));
-    cout <<"Frame number = "<<FrameNumber<<" , Last "<<LastFrameNumber<<endl;
+/*    cout <<"Frame number = "<<FrameNumber<<" , Last "<<LastFrameNumber<<endl;
     cout <<"data read "<<rc<<", from Frame data read="<<FrameSize<<endl;
     cout<<"number of NMR samples "<<Frame[12]<<endl;
     cout<<"number of Barcode samples "<<Frame[13]<<endl;
-
+*/
     LastFrameNumber=FrameNumber;
 
     trolley_nmr_t* TrlyNMRDataUnit = new trolley_nmr_t;
@@ -204,9 +205,17 @@ int main(int argc,char **argv){
 
     //Fill Graph
     if (iNMR<NPulses && Frame[12]>0){
+      zeros.clear();
       for (int j=0;j<TrlyNMRDataUnit->length;j++){
 	gArray[iNMR]->SetPoint(j,j,TrlyNMRDataUnit->trace[j]);
+	if (TrlyNMRDataUnit->trace[j-1]*TrlyNMRDataUnit->trace[j]<=0 && j>4000 && j<14400){
+	  zeros.push_back(j);
+	}
       }
+      int n = zeros.size();
+      double freq = (1.0/(2.0*double(zeros[n-1]*0.001 - zeros[0]*0.001)/double(zeros.size()-1)));
+      //      long double freq = (1000.0/(2.0*(long double)(zeros[n-1]*0.001 - zeros[0]*0.001)/(long double)(zeros.size()-1))) - 50394.7;
+      cout <<"Frequency = "<< freq<<endl;
       iNMR++;
     }
     if (i<NBarcodes){
@@ -243,10 +252,10 @@ int main(int argc,char **argv){
   }
 
   //Disconnect
-  DeviceWriteMask(0x40000944,0x00000001,0x00000000);
+/*  DeviceWriteMask(0x40000944,0x00000001,0x00000000);
   err = DeviceDisconnect();
-
-//  FileClose();
+*/
+  FileClose();
   //cout <<err<<endl;
   delete []Frame;
   for (int j=0;j<NPulses;j++){
