@@ -162,7 +162,7 @@ namespace TrolleyInterface{
 
   // Connection Functions
   void RegInit					(void);
-  int DeviceConnect				(const char* deviceIP);
+  int DeviceConnect				(char* deviceIP);
   int DeviceDisconnect			(void);
   int FileOpen(const char * filename);
   int FileClose();

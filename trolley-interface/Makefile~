@@ -11,11 +11,10 @@ LIBINSTALLDIR=$(PREFIX)/lib
 INCINSTALLDIR=$(PREFIX)/include/g2field
 
 DEPS=$(INC_DIR)/TCPDrivers.h $(INC_DIR)/TrolleyInterface.h
-CFLAGS = -I$(INC_DIR) -Wl,-rpath,$(LIB_DIR) -std=c++0x
+CFLAGS = -I$(INC_DIR) -Wl,-rpath,$(LIB_DIR)
 LIBFLAGS = -L$(LIB_DIR) -lTrolleyInterface
 
 all: $(BIN_DIR)/TestComm $(LIB_DIR)/libTrolleyInterface.so
-#all: $(LIB_DIR)/libTrolleyInterface.so
 
 
 $(LIB_DIR)/libTrolleyInterface.so: $(BUILD_DIR)/TCPDrivers.o $(BUILD_DIR)/TrolleyInterface.o
