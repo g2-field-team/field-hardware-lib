@@ -32,7 +32,6 @@ class CommonBase {
   // Ctor params:
   //   name - used in logging output
   CommonBase(std::string name) : name_(name) {};
-  ~CommonBase() {};
 
   inline void SetName(std::string name) { name_ = name; };
   inline void SetVerbosity(int v) { logging_verbosity_ = v; };
