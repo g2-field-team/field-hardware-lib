@@ -24,7 +24,7 @@
 
 int main(int argc, char** argv)
 {
-  int vme_dev, ret;
+  int vme_dev, rc;
   unsigned short status, data;
   long int address;
 
@@ -41,16 +41,15 @@ int main(int argc, char** argv)
   // Parse the hex address and message to write.
   address = strtol(argv[1], NULL, 16);
   data = strtol(argv[2], NULL, 16);
-  printf("Address: 0x%08x\n", address);
 
   // Write the address then read the resulting state.
-  ret = vme_A16D16_write(vme_dev, address, data);
-  ret = vme_A16D16_read(vme_dev, address, &status);
+  rc = vme_A16D16_write(vme_dev, address, data);
+  rc = vme_A16D16_read(vme_dev, address, &status);
   
   // Print the results.
-  printf("device: %d\n", vme_dev);
-  printf("return: %d\n", ret);
-  printf("status: 0x%04x", status & 0xffff);
+  printf("device: %d, return: %d\n", vme_dev, rc);
+  printf("address: 0x%08x\n", address);
+  printf("state: 0x%04x", status & 0xffff);
 
   return 0;
 }
