@@ -10,9 +10,10 @@ int main(int argc, char *argv[])
   // Open an output file.
   std::ofstream out;
   out.open("output/sis3350_test_data.csv");
+  std::string wfd_conf("/usr/local/etc/g2field/sis3350_0.json");
 
   // Create the digitizer.
-  hw::Sis3350 wfd("Test WFD", "/usr/local/etc/g2field/sis3350_0.json", trace_len);
+  hw::Sis3350 wfd("Test WFD", wfd_conf , trace_len);
   hw::wfd_data_t data;
 
   // Grab an event (well, try a few times anyway).

@@ -2,7 +2,6 @@
 #include "g2field/sis3316.hh"
 #include "g2field/dio_trigger_board.hh"
 
-
 int main(int argc, char *argv[])
 {
   // WFD variables.
