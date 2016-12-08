@@ -71,14 +71,14 @@ install:
 	mkdir -p $(LIBDIR)
 	install lib/* $(LIBDIR)
 
-	mkdir -p $(CONFDIR)
-	install config/* $(CONFDIR)
-
 	mkdir -p $(INCDIR) $(INCDIR)/vme
 	install include/*.hh $(INCDIR)
 	install include/vme/*.h $(INCDIR)/vme/
 
-	mkdir -p $(LOGDIR)
+	mkdir -p -m a=rwx $(CONFDIR)
+	install config/* $(CONFDIR)
+
+	mkdir -p -m a=rwx $(LOGDIR)
 	$(LDCONFIG)
 
 uninstall:
