@@ -12,7 +12,8 @@ int main(int argc, char *argv[])
   out.open("output/sis3302_test_data.csv");
 
   // Create the digitizer.
-  hw::Sis3302 wfd("Test WFD", "/usr/local/etc/g2field/sis3302_0.json", trace_len);
+  std::string conf_file("sis3302_0.json");
+  hw::Sis3302 wfd("Test WFD", conf_file, trace_len);
   hw::wfd_data_t data;
 
   // Grab an event (well, try a few times anyway).
