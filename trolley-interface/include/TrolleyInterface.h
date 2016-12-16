@@ -114,6 +114,48 @@ namespace TrolleyInterface{
     errorUnknown			= -1000,
   };
 
+  enum TrolleyCommRegister{
+    reg_sof 			=0x40000400,
+    reg_command			=0x40000404,
+    reg_comm_t_tid_start	=0x40000408,
+    reg_comm_t_tid		=0x4000040C,
+    reg_comm_t_tid_stop		=0x40000410,
+    reg_comm_t_td_start		=0x40000414,
+    reg_comm_t_td		=0x40000418,
+    reg_comm_t_stop		=0x4000041C,
+    reg_comm_t_switch_rf	=0x40000420,
+    reg_comm_t_power_on		=0x40000424,
+    reg_comm_t_rf_on		=0x40000428,
+    reg_comm_t_rf_off		=0x4000042C,
+    reg_comm_t_power_off	=0x40000430,
+    reg_comm_t_switch_comm	=0x40000434,
+    reg_comm_t_cycle_length	=0x40000438,
+
+    reg_nmr_rf_prescale		=0x4000043C,
+    reg_nmr_rf_probe_select	=0x40000440,
+    reg_nmr_rf_probe_delay	=0x40000444,
+    reg_nmr_rf_probe_period	=0x40000448,
+    reg_nmr_rf_preamp_delay	=0x4000044C,
+    reg_nmr_rf_preamp_period	=0x40000450,
+    reg_nmr_rf_gate_delay	=0x40000454,
+    reg_nmr_rf_gate_period	=0x40000458,
+    reg_nmr_rf_transmit_delay	=0x4000045C,
+    reg_nmr_rf_transmit_period	=0x40000460,
+
+    reg_bc_refdac1		=0x40000464,
+    reg_bc_refdac2		=0x40000468,
+    reg_bc_sample_period	=0x4000046C,
+    reg_bc_refcm		=0x40000470,
+
+    reg_power_control		=0x40000474,
+    reg_unused_1		=0x40000478,
+    reg_power_control2		=0x4000047C,
+    reg_eof			=0x40000480,
+
+    reg_free_event_memory	=0x40000894,
+    reg_event_data_control	=0x40000944,
+  };
+
   //==============================================================================
   // Types
   //==============================================================================
