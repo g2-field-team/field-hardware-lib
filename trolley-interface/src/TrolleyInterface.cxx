@@ -160,18 +160,13 @@ namespace TrolleyInterface{
 
   int DevicePurgeData (void)
   {
-    int				error = errorNoError;
-/*    unsigned int	TCPdata[1000];
-    int				rxStatus = 0;
-
+    int error = errorNoError;
+    unsigned int TCPdata[1000];
+    int rxStatus = 0;
     do
     {
-      rxStatus = ClientTCPRead(tcpDataHandle, (unsigned int*)(TCPdata), sizeof(TCPdata), 100); 
+      rxStatus = ClientTCPRead(tcpDataHandle, (unsigned int*)(TCPdata), sizeof(TCPdata), 100);
     } while(rxStatus > 0);
-*/
-    // Since disable control in the FPGA is currently disconnected, clear the buffers via the ARM.
-    // However, data will continue to flow.
-    DeviceWrite (0x00000300, 0x00000001);
     return error;
   }
 
