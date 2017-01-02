@@ -22,8 +22,8 @@ namespace yokogawa_interface {
    };
 
    enum yokoState { 
-      kOFF = 0, 
-      kON  = 1
+      kDISABLED = 0, 
+      kENABLED  = 1
    }; 
 
    char DeviceIP[20]    = "XXX.XXX.XXX.XXX";

@@ -33,7 +33,7 @@ int main(int argc,char **argv){
    std::cout << "Checking the output state..." << std::endl;
    rc = yokogawa_interface::get_output_state(); 
 
-   if (rc==yokogawa_interface::kON) { 
+   if (rc==yokogawa_interface::kENABLED) { 
       std::cout << "Device output is ENABLED" << std::endl;
    } else { 
       std::cout << "Device output is DISABLED" << std::endl;
