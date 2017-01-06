@@ -66,10 +66,8 @@ public:
 
   // Spawns a new thread that pull in new data.
   virtual void StartThread() {
+    StopThread();
     thread_live_ = true;
-    if (work_thread_.joinable()) {
-      work_thread_.join();
-    }
     work_thread_ = std::thread(&WfdBase::WorkLoop, this);
   };
 
