@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
   int num_ch = 16;
   int num_read_attempts = 10;
   std::string wfd_name("Test WFD");
-  std::string wfd_conf("/usr/local/etc/g2field/sis3316_0.json");
+  std::string wfd_conf("/usr/local/etc/g2field/sis3316_sample.json");
 
   // Trigger variables
   auto trg_card(hw::BOARD_B);
