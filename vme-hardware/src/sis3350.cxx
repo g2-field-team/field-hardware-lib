@@ -13,6 +13,7 @@ namespace hw {
   read_len_ = trace_len_ / 2 + 4;
 
   StartThread();
+  StartWorker();
 }
 
 void Sis3350::LoadConfig()

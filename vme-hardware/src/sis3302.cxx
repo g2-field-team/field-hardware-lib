@@ -14,8 +14,7 @@ Sis3302::Sis3302(std::string name, std::string conf, int trace_len) :
   read_len_ = trace_len / 2;
 
   StartThread();
-
-  go_time_ = true;
+  StartWorker();
 }
 
 void Sis3302::LoadConfig()

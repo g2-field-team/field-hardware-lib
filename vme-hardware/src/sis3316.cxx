@@ -15,8 +15,7 @@ Sis3316::Sis3316(std::string name, std::string conf, int trace_len) :
   bank2_armed_flag = false;
 
   StartThread();
-
-  go_time_ = true;
+  StartWorker();
 }
 
 void Sis3316::LoadConfig()
