@@ -3,7 +3,7 @@
 namespace hw {
 
 Caen1742::Caen1742(std::string name, std::string conf, int trace_len) :
-  CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 18, trace_len)
+  CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 34, trace_len)
 {
   conf_file_ = conf;
   
@@ -13,9 +13,10 @@ Caen1742::Caen1742(std::string name, std::string conf, int trace_len) :
   read_len_ = trace_len;
   
   thread_live_ = true;
-  go_time_ = true;
-  
+
   StartThread();
+
+  go_time_ = true;
 }
   
 void Caen1742::LoadConfig()
@@ -353,7 +354,7 @@ void Caen1742::WorkLoop()
     while (go_time_) {
 
       if (EventAvailable()) {
-
+	
 	static wfd_data_t bundle;
 	GetEvent(bundle);
 
@@ -421,6 +422,7 @@ bool Caen1742::EventAvailable()
   // Check acquisition status regsiter.
   uint msg, rc;
 
+  LogDebug("checking for event");
   /*
   //ready flag in acq status
   rc = Read(0x8104, msg);

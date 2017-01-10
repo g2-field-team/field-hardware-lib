@@ -91,7 +91,7 @@ private:
   static constexpr double vpp_ = 1.0; // Scale of the device's voltage range
   const static ushort peakthresh = 30; // For peak corrections
   const static uint kNumAdcGroups = 2;
-  const static uint kNumAdcChannels = 16;
+  const static uint kNumAdcChannels = 32;
   const static uint kNumAdcSamples = 1024;
   
   int device_;
