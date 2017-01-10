@@ -28,7 +28,6 @@ void Caen1742::LoadConfig()
   uint msg = 0;
   std::string tmp;
 
-  // Get the correction plan
   drs_cell_corrections_ = conf.get<bool>("drs_cell_corrections", true);
   drs_peak_corrections_ = conf.get<bool>("drs_peak_corrections", true);
   drs_time_corrections_ = conf.get<bool>("drs_time_corrections", true);
@@ -40,31 +39,27 @@ void Caen1742::LoadConfig()
   // Get the board info.
   rc = Read(0xf034, msg);
   if (rc != 0) {
-
     LogError("could not find device");
-
   }
 
   // Board type
   if ((msg & 0xff) == 0x00) {
-    
     LogMessage("Found caen v1742");
-    
+
   } else if ((msg & 0xff) == 0x01) {
-      
     LogMessage("Found caen vx1742");
   }
 
-  // Check the serial number 
+  // Check the serial number
   int sn = 0;
 
   rc = Read(0xf080, msg);
   if (rc != 0) {
     LogError("failed to read high byte of serial number");
   }
-  
+
   sn += (msg & 0xff) << 2;
-  
+
   rc = Read(0xf084, msg);
   if (rc != 0) {
     LogError("failed to read lower byte of serial number");
@@ -72,13 +67,12 @@ void Caen1742::LoadConfig()
 
   sn += (msg & 0xff);
   LogMessage("Serial Number: %i", sn);
-  
+
   // Get the hardware revision numbers.
   uint rev[4];
-  
-  for (int i = 0; i < 4; ++i) {
 
-    rc = Read(0xf040 + 4*i, msg);
+  for (int i = 0; i < 4; ++i) {
+    rc = Read(0xf040 + 4 * i, msg);
     if (rc != 0) {
       LogError("failed to read hardware revision byte %i", i);
     }
@@ -86,21 +80,19 @@ void Caen1742::LoadConfig()
     rev[i] = msg;
   }
 
-  LogMessage("Board Hardware Release %i.%i.%i.%i", 
-	     rev[0], rev[1], rev[2], rev[3]);
-  
+  LogMessage("Board Hardware Release %i.%i.%i.%i", rev[0], rev[1], rev[2],
+             rev[3]);
+
   // Check the temperature.
   for (int i = 0; i < 4; ++i) {
-
-    rc = Read(0x1088 + i*0x100, msg);
+    rc = Read(0x1088 + i * 0x100, msg);
     if (rc != 0) {
       LogError("failed to read status of DRS4 chip %i", i);
     }
 
-    if (msg & ((0x1 << 2) | (0x1 << 8)))
-      LogDebug("unit %i is busy", i);
+    if (msg & ((0x1 << 2) | (0x1 << 8))) LogDebug("unit %i is busy", i);
 
-    rc = Read(0x10A0 + i*0x100, msg);
+    rc = Read(0x10A0 + i * 0x100, msg);
     if (rc != 0) {
       LogError("failed to read temperature of DRS4 chip %i", i);
     }
@@ -122,9 +114,8 @@ void Caen1742::LoadConfig()
   if (rc != 0) {
     LogError("failed to check device status");
   }
-  
-  if (msg & (0x1 << 2)) {
 
+  if (msg & (0x1 << 2)) {
     LogWarning("Unit was already running on init");
 
     rc = Read(0x8100, msg);
@@ -140,7 +131,7 @@ void Caen1742::LoadConfig()
       LogError("failure writing register 0x8100");
     }
   }
-    
+
   // Set the group enable mask to all groups.
   rc = Read(0x8120, msg);
   if (rc != 0) {
@@ -153,10 +144,42 @@ void Caen1742::LoadConfig()
   }
 
   // Enable digitization of the triggers using config bit enable register.
-  rc = Write(0x8004, 0x1 << 11);
+  // change 0x940 to 0x1940 to trigger on fast triggers.
+  // it will only trigger one group.
+  rc = Read(0x8000, msg);
+  if (rc != 0){
+    LogError("failed to read group settings");
+  }
+
+  rc = Write(0x8000, msg | 0x940 );
   if (rc != 0) {
     LogError("failed to enable digitization of triggers");
   }
+
+  // set TRn thresholds to negative NIM level
+  int gr = 0;
+  for (auto &addr : std::vector<uint>{0x1000, 0x1200}) {
+    // set threshold
+    WaitForSpi(gr);
+    rc = Write(addr + 0xD4, 0x51C6);
+    if (rc != 0) {
+      LogError("error setting TRn threshold");
+    }
+
+    // set dc offset
+    WaitForSpi(gr);
+    rc = Write(addr + 0xDC, 0x8000);
+    if (rc != 0) {
+      LogError("error setting TRn DC offset");
+    }
+    gr += 2;
+  }
+
+  // enable front panel trigger out
+  /*  rc = Write(0x8110, 0xc000000f);
+  if (rc != 0) {
+    LogError("Failed to set front panel trigger out enable mask");
+    }*/
 
   rc = Read(0x8120, msg);
   if (rc != 0) {
@@ -170,8 +193,8 @@ void Caen1742::LoadConfig()
   if (rc != 0) {
     LogError("failed to read device configuration");
   }
-  
-  rc = Write(0x8020, msg & 0xfffffffc); // 1024
+
+  rc = Write(0x8020, msg & 0xfffffffc);  // 1024
   if (rc != 0) {
     LogError("failed to write device configuration for trace length");
   }
@@ -181,18 +204,15 @@ void Caen1742::LoadConfig()
   sampling_setting_ = 0;
 
   if (sampling_rate < 1.75) {
-
-    sampling_setting_ |= 0x2; // 1.0 Gsps
+    sampling_setting_ |= 0x2;  // 1.0 Gsps
     LogMessage("sampling rate set to 1.0 Gsps");
 
   } else if (sampling_rate >= 1.75 && sampling_rate < 3.75) {
-
-    sampling_setting_ |= 0x1; // 2.5 Gsps
+    sampling_setting_ |= 0x1;  // 2.5 Gsps
     LogMessage("sampling rate set to 2.5 Gsps");
-    
-  } else if (sampling_rate >= 3.75) {
 
-    sampling_setting_ |= 0x0; // 5.0 Gsps
+  } else if (sampling_rate >= 3.75) {
+    sampling_setting_ |= 0x0;  // 5.0 Gsps
     LogMessage("sampling rate set to 5.0 Gsps");
   }
 
@@ -217,51 +237,46 @@ void Caen1742::LoadConfig()
     LogError("failed to set the pre-trigger buffer");
   }
 
-  //DAC offsets
+  // DAC offsets
   uint ch = 0;
   uint ch_idx = 0;
   uint group_size = kNumAdcChannels / kNumAdcGroups;
   for (auto &val : conf.get_child("channel_offset")) {
-
     // Set group
     int group_idx = ch / group_size;
 
     // Convert the voltage to a dac value.
     float volts = val.second.get_value<float>();
     uint dac = (uint)((volts / vpp_) * 0xffff + 0x8000);
-    
+
     if (dac < 0x0) dac = 0;
     if (dac > 0xffff) dac = 0xffff;
-    
+
     // Make sure the board isn't busy
     int count = 0;
     while (true) {
-
-      rc = Read(0x1088 + 0x100*group_idx, msg);
+      rc = Read(0x1088 + 0x100 * group_idx, msg);
       if (rc != 0) {
-        
-	LogError("failed to read boad status while setting DAC");
-	break;
+        LogError("failed to read boad status while setting DAC");
+        break;
 
-      } else if (!(msg & 0x84)) {
-
-	// This is what should happen
-	break;
+      } else if (!(msg & 0x104)) {
+        // This is what should happen
+        break;
 
       } else if (count++ > 1000) {
-        
-	LogError("timed out polling busy after setting DAC, ch%i", ch);
-	break;
+        LogError("timed out polling busy after setting DAC, ch%i", ch);
+        break;
       }
     }
-    
+
     ch_idx = (ch++) % group_size;
 
-    rc = Write(0x1098 + 0x100*group_idx, dac | (ch_idx << 16));
+    rc = Write(0x1098 + 0x100 * group_idx, dac | (ch_idx << 16));
     if (rc != 0) {
       LogError("failed to select next DAC");
     }
-  }    
+  }
 
   if (conf.get<bool>("write_correction_data_csv", false)) {
     WriteCorrectionDataCsv();
@@ -296,7 +311,7 @@ void Caen1742::LoadConfig()
   }
 
   rc = Write(0xef00, 0x10);
-  //rc = Write(0xef00, 0x0);
+  // rc = Write(0xef00, 0x0);
   if (rc != 0) {
     LogError("failed to enable BERR in VME control register");
   }
@@ -304,7 +319,6 @@ void Caen1742::LoadConfig()
   // Start acquiring events.
   int count = 0;
   do {
-
     rc = Read(0x8104, msg);
     if (rc != 0) {
       LogError("failed to read board acquiring status");
@@ -327,22 +341,30 @@ void Caen1742::LoadConfig()
 
   usleep(1000);
 
-  // Send a test software trigger and read it out.
-  rc = Write(0x8108, msg);
-  if (rc != 0) {
-    LogError("failed to send test software trigger");
-  }
+  /*
+   // Send a test software trigger and read it out.
+   rc = Write(0x8108, msg);
+   if (rc != 0) {
+     LogError("failed to send test software trigger");
+   }
 
-  // Read initial empty event.
-  LogDebug("eating first empty event");
-  if (EventAvailable()) {
-    wfd_data_t bundle;
-    GetEvent(bundle);
+   // Read initial empty event.
+   LogDebug("eating first empty event");
+   if (EventAvailable()) {
+     caen_1742 bundle;
+     GetEvent(bundle);
+     }*/
+
+  // clear data,
+  // this prevents the digitizer from sometimes hanging in busy mode
+  rc = Write(0xef28, msg);
+  if (rc != 0) {
+    LogError("failed to clear data");
   }
 
   LogMessage("LoadConfig finished");
 
-} // LoadConfig
+}  // LoadConfig
 
 void Caen1742::WorkLoop()
 {
@@ -1202,6 +1224,37 @@ int Caen1742::WriteCorrectionDataCsv()
       }
     } // time
   } // i
+}
+
+
+void Caen1742::WaitForSpi(int group_index) {
+  // check spi busy flag
+  uint msg;
+  int count = 0;
+
+  while (true) {
+
+    auto rc = Read(0x1088 + group_index * 0x100, msg);
+
+    if (rc != 0) {
+      LogError("Failed to read group status!");
+    }
+
+    if (!(msg & 0x4)) {  // spi not busy
+
+      break;
+
+    } else if (count < 10) {
+
+      usleep(1000);
+
+    } else {
+
+      LogError("SPI interface busy for 10 tries while setting TRn threshold");
+      break;
+    }
+    ++count;
+  }
 }
 
 } // ::daq
