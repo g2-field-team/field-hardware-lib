@@ -13,9 +13,9 @@ Caen1742::Caen1742(std::string name, std::string conf, int trace_len) :
   read_len_ = trace_len;
   
   thread_live_ = true;
-  go_time_ = true;
-  
+
   StartThread();
+  StartWorker();
 }
   
 void Caen1742::LoadConfig()

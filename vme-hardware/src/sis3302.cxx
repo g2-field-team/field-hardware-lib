@@ -17,6 +17,7 @@ Sis3302::Sis3302(std::string name, std::string conf, int trace_len) :
   go_time_ = true;
 
   StartThread();
+  StartWorker();
 }
 
 void Sis3302::LoadConfig()
