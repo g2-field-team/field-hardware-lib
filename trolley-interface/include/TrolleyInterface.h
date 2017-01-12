@@ -142,17 +142,20 @@ namespace TrolleyInterface{
     reg_nmr_rf_transmit_delay	=0x4000045C,
     reg_nmr_rf_transmit_period	=0x40000460,
 
-    reg_bc_refdac1		=0x40000464,
-    reg_bc_refdac2		=0x40000468,
-    reg_bc_sample_period	=0x4000046C,
-    reg_bc_refcm		=0x40000470,
+    reg_bc_sample_period	=0x40000464,
+    reg_bc_t_acq		=0x40000468,
+    reg_bc_refdac1		=0x4000046C,
+    reg_bc_refdac2		=0x40000470,
+    reg_bc_refcm		=0x40000474,
 
-    reg_power_control		=0x40000474,
-    reg_unused_1		=0x40000478,
+    reg_power_control1		=0x40000478,
     reg_power_control2		=0x4000047C,
     reg_eof			=0x40000480,
+    reg_flash_test1		=0x40000484,
+    reg_flash_test2		=0x40000488,
+    reg_unused_1		=0x4000048C,
 
-    reg_free_event_memory	=0x40000894,
+    reg_free_event_memory	=0x40000994,
     reg_event_data_control	=0x40000944,
   };
 
