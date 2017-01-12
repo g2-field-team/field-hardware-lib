@@ -142,10 +142,12 @@ private:
   // Readout individual channel's correction data.
   int GetChannelCorrectionData(uint ch);
  
-  // Read a page of flash memory on the device, used in getting correction data.
+  // Read a page of flash memory on the device, used in getting correction data
   int ReadFlashPage(uint32_t group, 
 		    uint32_t pagenum, 
 		    std::vector<int8_t> &page);
+
+  void WaitForSpi(int group_index);
 
   // Optionally write out the correction data as a csv to observe.
   int WriteCorrectionDataCsv();
