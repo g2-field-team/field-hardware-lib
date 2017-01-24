@@ -15,6 +15,8 @@
 #include <string.h> 
 
 #include "vxi11/vxi11_user.h"
+#include "vxi11/vxi11_xdr.c"
+#include "vxi11/vxi11_clnt.c"
 
 #define YOKO_BUF_SIZE 1000 
 

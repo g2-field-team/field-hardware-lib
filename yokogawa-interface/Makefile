@@ -1,80 +1,43 @@
-# Yokogawa Makefile
-# Copied from the vme-hardware setup; small modifications for the vxi-11 library   
-# Grab the targets and sources as two batches
-OBJECTS = $(patsubst src/%.cxx, build/%.o, $(wildcard src/*.cxx))
+CXX=g++
+SRC_DIR = ./src
+INC_DIR = ./include
+INC_VXI_DIR=./include/vxi11
+LIB_DIR = ./lib
+BUILD_DIR = ./build
+BIN_DIR = ./bin
+
 # objects for vxi11 
-OBJ_VXI = $(patsubst include/vxi11/%.cc, build/%.o, $(wildcard include/vxi11/*.cc))
+OBJ_VXI = $(patsubst include/vxi11/%.c, build/%.o, $(wildcard include/vxi11/*.c))
 
 # Locations and default files
-LIB_DIR=./lib
-BUILD_DIR=./build
-BIN_DIR=./bin
-INC_VXI_DIR=./include/vxi11
+PREFIX=/usr/local
+LIBINSTALLDIR=$(PREFIX)/lib
+INCINSTALLDIR=$(PREFIX)/include/g2field
 
-# Library info.
-MAJOR=0
-MINOR=0.1
-SONAME=libg2fieldyoko.so
-ARNAME=libg2fieldyoko.a
-LIBNAME=$(SONAME).$(MAJOR).$(MINOR)
+DEPS=$(INC_DIR)/YokogawaInterface.hh $(INC_DIR)/vxi11/vxi11_user.h
+CFLAGS = -I$(INC_DIR) -Wl,-rpath,$(LIB_DIR)
+LIBFLAGS = -L$(LIB_DIR) -lyokogawainterface
 
-# Add a few flags to all compiler calls.
-CXX += -O3 -fPIC
-CC += -O3 -fPIC
+all: $(BIN_DIR)/TestComm $(LIB_DIR)/libyokogawainterface.so
 
-ifdef DEBUG
-   CXX += -g -pg
-   CC += -g -pg
-endif
-
-# Add local include directory
-CPPFLAGS += -Iinclude
-
-# Check for UPS boost
-ifdef BOOST_INC
-   CPPFLAGS += -I$(BOOST_INC)
-   LIBFLAGS += -L$(BOOST_LIB)
-endif
-
-# ROOT libs and flags
-CXXFLAGS += $(shell root-config --cflags)
-LIBS += $(shell root-config --libs)
-
-ifeq ($(shell uname -s), Darwin)
-        LIBFLAGS = -shared -Wl,-install_name,$(SONAME).$(MAJOR)
-else
-        LIBFLAGS = -shared -Wl,-soname,$(SONAME).$(MAJOR)
-        LDCONFIG = ldconfig
-endif
-
-all: $(OBJECTS) $(OBJ_VXI) $(TARGETS) lib/$(ARNAME) lib/$(LIBNAME)
-
-# $(LOGFILE):
-# 	@mkdir -p $(@D)
-# 	@touch $@
-# 
-# $(CONFDIR):
-# 	@mkdir -p $(@D)
-# 	@cp -r config $(@D)/
-
-build/%.o: src/%.cxx
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
-
-# build/%.o: include/vxi11/%.cc
-# 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
-#
 # VXI build rules  
-build/vxi11_user.o: $(INC_VXI_DIR)/vxi11_user.cc $(INC_VXI_DIR)/vxi11.h
-	$(CXX) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/vxi11_user.o: $(INC_VXI_DIR)/vxi11_user.cc $(INC_VXI_DIR)/vxi11.h
+	$(CXX) $(CFLAGS) -fPIC -c $< -o $@
 
-INC_VXI_DIR/vxi11.h INC_VXI_DIR/vxi11_clnt.c INC_VXI_DIR/vxi11_xdr.c : $(INC_VXI_DIR)/vxi11.x
+$(INC_VXI_DIR)/vxi11.h $(INC_VXI_DIR)/vxi11_clnt.c $(INC_VXI_DIR)/vxi11_xdr.c : $(INC_VXI_DIR)/vxi11.x
 	rpcgen -M $(INC_VXI_DIR)/vxi11.x
 
-lib/$(ARNAME): $(OBJECTS) $(OBJ_VXI)
-	$(AR) -rcs $@ $+
+$(LIB_DIR)/libyokogawainterface.so: $(BUILD_DIR)/YokogawaInterface.o $(BUILD_DIR)/vxi11_user.o
+	$(CXX) -shared -fPIC -o $@ $^ 
 
-lib/$(LIBNAME): $(OBJECTS) $(OBJ_VXI)
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LIBFLAGS) -o $@ $+ $(LIBS)
+$(BUILD_DIR)/YokogawaInterface.o: $(SRC_DIR)/YokogawaInterface.cxx $(DEPS)
+	$(CXX) -o $@ -fPIC -c $< $(CFLAGS)
+
+$(BUILD_DIR)/TestComm.o: $(SRC_DIR)/TestComm.cxx $(DEPS)
+	$(CXX) -o $@ -fPIC -c $< $(CFLAGS) `root-config --cflags`
+
+$(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o $(LIB_DIR)/libyokogawainterface.so
+	$(CXX) -o $@ $< $(CFLAGS)  $(LIBFLAGS) `root-config --libs`
 
 .PHONY: clean
 .PHONY: install
@@ -85,3 +48,4 @@ clean:
 install:
 	mkdir -p $(LIBINSTALLDIR)
 	install $(LIB_DIR)/* $(LIBINSTALLDIR)
+
