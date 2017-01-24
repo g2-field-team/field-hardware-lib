@@ -49,3 +49,9 @@ install:
 	mkdir -p $(LIBINSTALLDIR)
 	install $(LIB_DIR)/* $(LIBINSTALLDIR)
 
+	mkdir -p $(INCINSTALLDIR) $(INCINSTALLDIR)/vxi11
+	install include/*.hh $(INCINSTALLDIR)
+	install include/vxi11/*.h $(INCINSTALLDIR)/vxi11
+	install include/vxi11/*.c $(INCINSTALLDIR)/vxi11
+	install include/vxi11/*.cc $(INCINSTALLDIR)/vxi11
+
