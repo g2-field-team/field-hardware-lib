@@ -3,7 +3,7 @@
 namespace hw {
 
 Caen1742::Caen1742(std::string name, std::string conf, int trace_len) :
-  CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 34, trace_len)
+  CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 36, trace_len)
 {
   conf_file_ = conf;
   
@@ -389,12 +389,12 @@ void Caen1742::WorkLoop()
       } else {
 	
 	std::this_thread::yield();
-	usleep(hw::short_sleep);
+	hw::light_sleep();
       }
     }
 
     std::this_thread::yield();
-    usleep(hw::long_sleep);
+    hw::heavy_sleep();
   }
 
   // Stop acquiring events.
@@ -505,7 +505,7 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
   char *evtptr = nullptr;
   uint msg, d, size;
   int sample;
-  std::vector<uint> startcells(4, 0);
+  std::vector<uint> startcells(kNumAdcGroups, 0);
 
   static std::vector<uint> buffer;
   buffer.reserve(0x10000);
@@ -516,14 +516,14 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
   auto dtn = t1.time_since_epoch() - t0_.time_since_epoch();
   bundle.sys_clock = duration_cast<milliseconds>(dtn).count();  
 
-  /*
   // Get the size of the next event data
   rc = Read(0x814c, msg);
   if (rc != 0) {
-  LogError("failed to attain size of next event");
-  return;
+    LogError("failed to attain size of next event");
+    return;
+  } else {
+    LogDebug("begin readout of event length: %i", msg);
   }
-  */
   
   /*
   //works OK at about 20 Hz  
@@ -534,7 +534,6 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
   */
   
   read_len_ = buffer.capacity();
-  LogDebug("begin readout of event length: %i", msg);
   rc = ReadTraceMblt64SameBlock(0x0, &buffer[0]);
 
   //rc > 0: number of words read
@@ -706,16 +705,17 @@ int Caen1742::CellCorrection(wfd_data_t &data,
   LogDebug("running cell correction");
 
   uint i, j, k;
-  short startcell;
+  uint startcell;
   uint nchannels = kNumAdcChannels / kNumAdcGroups;
   
   for (i = 0; i < kNumAdcChannels; ++i) {
-
+    
     startcell = startcells[i / nchannels];
 
     for (j = 0; j < kNumAdcSamples; ++j) {
       
-      data.trace[i][j] -= correction_table_.cell[i][(startcell + j) % 1024];
+      k = (startcell + j) % kNumAdcSamples;     
+      data.trace[i][j] -= correction_table_.cell[i][k];
       data.trace[i][j] -= correction_table_.nsample[i][j];
     }
   }
@@ -1014,7 +1014,7 @@ int Caen1742::GetChannelCorrectionData(uint ch)
   // Read the time correction if it's the first channel in the group.
   if (ch % (kNumAdcChannels / kNumAdcGroups) == 0) {
     
-    LogDebug("loading time corrections for gr %i", ch % (kNumAdcSamples / kNumAdcGroups));
+    LogDebug("loading time corrections for gr %i", ch % (kNumAdcChannels / kNumAdcGroups));
     pagenum &= 0xf00;
     pagenum |= 0xa0;
 

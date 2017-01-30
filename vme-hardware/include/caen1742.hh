@@ -90,7 +90,7 @@ private:
 
   static constexpr double vpp_ = 1.0; // Scale of the device's voltage range
   const static ushort peakthresh = 30; // For peak corrections
-  const static uint kNumAdcGroups = 2;
+  const static uint kNumAdcGroups = 4;
   const static uint kNumAdcChannels = 32;
   const static uint kNumAdcSamples = 1024;
   
@@ -105,9 +105,9 @@ private:
   std::chrono::high_resolution_clock::time_point t0_;
 
   typedef struct {
-    int16_t cell[16][1024];
-    int8_t  nsample[16][1024];
-    float   time[2][1024];
+    int16_t cell[kNumAdcChannels][kNumAdcSamples];
+    int8_t  nsample[kNumAdcChannels][kNumAdcSamples];
+    float   time[kNumAdcGroups][kNumAdcSamples];
   } drs_correction;
 
   drs_correction correction_table_;
