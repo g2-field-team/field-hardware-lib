@@ -17,6 +17,7 @@
 //--- std includes ----------------------------------------------------------//
 #include <chrono>
 #include <iostream>
+#include <sys/stat.h>
 
 //--- project includes ------------------------------------------------------//
 #include "vme_base.hh"
@@ -43,6 +44,8 @@ class Caen1742 : public VmeBase, public WfdBase {
   //     "drs_cell_corrections":true,
   //     "drs_peak_corrections":false,
   //     "drs_time_corrections":true,
+  //     "write_correction_data_csv":false,
+  //     "load_correction_from_disk":true,
   //     "channel_offset":[
   // 	     0.15,
   // 	     0.15,
@@ -101,6 +104,7 @@ private:
   bool drs_cell_corrections_;
   bool drs_peak_corrections_;
   bool drs_time_corrections_;
+  bool corrections_from_disk_;
 
   std::chrono::high_resolution_clock::time_point t0_;
 
@@ -151,6 +155,9 @@ private:
 
   // Optionally write out the correction data as a csv to observe.
   int WriteCorrectionDataCsv();
+
+  // Load the correction table from disk.
+  int LoadCorrectionDataCsv(std::string fn);
 };
 
 } // ::daq
