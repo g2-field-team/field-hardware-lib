@@ -155,6 +155,9 @@ namespace TrolleyInterface{
     reg_flash_test2		=0x40000488,
     reg_unused_1		=0x4000048C,
 
+    reg_trolley_power		=0x40000680,
+    reg_trolley_power_set	=0x40000684,
+
     reg_free_event_memory	=0x40000994,
     reg_event_data_control	=0x40000944,
   };
