@@ -203,8 +203,8 @@ namespace yokogawa_interface {
       buf     = new char[YOKO_BUF_SIZE+1]; 
       REC_BUF = new char[YOKO_BUF_SIZE+1]; 
       sprintf(DeviceIP,ip_addr); 
-      printf("Attempting to open the connection... \n"); 
-      int rc = vxi11_open_device(DeviceIP,clink,DeviceName);
+      printf("Attempting to open the connection to IP address %s... \n",ip_addr); 
+      int rc = vxi11_open_device(DeviceIP,clink);
       printf("Returning... \n"); 
       return rc;  
    }

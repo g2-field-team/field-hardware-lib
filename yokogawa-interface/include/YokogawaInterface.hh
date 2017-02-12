@@ -31,6 +31,8 @@ namespace yokogawa_interface {
       kDISABLED = 0, 
       kENABLED  = 1
    }; 
+   
+   CLINK *clink;                                     // for VXI-11 connection  
 
    char *buf;                                        // for queries (in other functions)   
    char *REC_BUF;                                    // for queries (in ask function; this gets returned to buf)  
@@ -40,8 +42,6 @@ namespace yokogawa_interface {
    char ModelNo[50]     = "UNKNOWN";
    char SerialNo[50]    = "UNKNOWN";
    char FirmwareVer[50] = "UNKNOWN";
-  
-   CLINK *clink;                                      // for VXI-11 connection  
  
    int set_mode(int mode); 
    int set_range(double r); 
