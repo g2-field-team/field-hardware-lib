@@ -1,4 +1,4 @@
 all:
 	make -C trolley-interface
-	make -C vme-hardware
+	make -C vme-interface
 	make -C yokogawa-interface	
