@@ -122,7 +122,7 @@ namespace TrolleyInterface{
     reg_comm_t_tid_stop		=0x40000410,
     reg_comm_t_td_start		=0x40000414,
     reg_comm_t_td		=0x40000418,
-    reg_comm_t_stop		=0x4000041C,
+    reg_comm_t_td_stop		=0x4000041C,
     reg_comm_t_switch_rf	=0x40000420,
     reg_comm_t_power_on		=0x40000424,
     reg_comm_t_rf_on		=0x40000428,
