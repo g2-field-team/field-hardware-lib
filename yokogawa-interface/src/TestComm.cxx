@@ -1,18 +1,18 @@
 // a test program to talk to the Yokogawa 
 
-#include <cstdlib> 
-#include <cstdio> 
-#include <iostream>
-#include <string.h>  
-
 #include "YokogawaInterface.hh" 
 
 int main(int argc,char **argv){
 
    int rc=0; 
+
+   const int SIZE = 13; 
+   char *ip_addr = new char[SIZE+1]; 
+   sprintf(ip_addr,"%s","192.168.5.160"); 
+
    std::cout << "Connecting to Yokogawa..." << std::endl;
 
-   rc = yokogawa_interface::open_connection("192.168.5.160"); 
+   rc = yokogawa_interface::open_connection(ip_addr); 
    
    if (rc==0) { 
       std::cout << "Device connected! " << std::endl;
@@ -40,6 +40,8 @@ int main(int argc,char **argv){
    }
 
    rc = yokogawa_interface::close_connection(); 
+
+   delete ip_addr; 
 
    return 0;
 }
