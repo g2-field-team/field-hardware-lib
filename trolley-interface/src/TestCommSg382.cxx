@@ -2,7 +2,6 @@
 #include "Sg382Interface.h"
 #include "TCPDrivers.h"
 #include <cstring>
-#include <unistd.h>
 
 using namespace std;
 using namespace TCPDrivers;
@@ -24,11 +23,8 @@ int main(int argc,char **argv){
   cout <<"Status "<<Status<<endl;
 
   SetFrequency(61.766);
-  usleep(10000);
   SetAmplitude(6.1);
-  usleep(10000);
   DisableRF();
-  usleep(10000);
   GetFrequency(f);
   GetAmplitude(A);
   GetStatus(Status);
@@ -38,7 +34,6 @@ int main(int argc,char **argv){
   cout <<"Status "<<Status<<endl;
 
   EnableRF();
-  usleep(10000);
   GetStatus(Status);
   cout <<"Status "<<Status<<endl;
 
