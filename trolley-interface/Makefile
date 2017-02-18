@@ -38,7 +38,7 @@ $(BUILD_DIR)/TestComm.o: $(SRC_DIR)/TestComm.cxx $(DEPS)
 $(BUILD_DIR)/TestCommSg382.o: $(SRC_DIR)/TestCommSg382.cxx $(DEPS)
 	$(CXX) -o $@ -fPIC -c $< $(CFLAGS) `root-config --cflags`
 
-$(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o $(LIB_DIR)/libtrolleyinterface.so
+$(BIN_DIR)/TestComm: $(BUILD_DIR)/TestComm.o $(LIB_DIR)/libtrolleyinterface.so $(LIB_DIR)/libsg382interface.so
 	$(CXX) -o $@ $< $(CFLAGS)  $(LIBFLAGS) `root-config --libs`
 
 $(BIN_DIR)/TestCommSg382: $(BUILD_DIR)/TestCommSg382.o $(LIB_DIR)/libsg382interface.so
