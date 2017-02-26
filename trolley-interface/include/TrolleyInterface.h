@@ -115,56 +115,94 @@ namespace TrolleyInterface{
   };
 
   enum TrolleyCommRegister{
-    reg_sof 			=0x40000400,
-    reg_command			=0x40000404,
-    reg_comm_t_tid_start	=0x40000408,
-    reg_comm_t_tid		=0x4000040C,
-    reg_comm_t_tid_stop		=0x40000410,
-    reg_comm_t_td_start		=0x40000414,
-    reg_comm_t_td		=0x40000418,
-    reg_comm_t_td_stop		=0x4000041C,
-    reg_comm_t_switch_rf	=0x40000420,
-    reg_comm_t_power_on		=0x40000424,
-    reg_comm_t_rf_on		=0x40000428,
-    reg_comm_t_rf_off		=0x4000042C,
-    reg_comm_t_power_off	=0x40000430,
-    reg_comm_t_switch_comm	=0x40000434,
-    reg_comm_t_cycle_length	=0x40000438,
+    reg_max_di_dt		=0x40000300,	//Trolley protection, maximum di/dt
+    reg_v_prot_threshold	=0x40000304,	//Trolley protection, v threshold
+    reg_i_prot_threshold	=0x40000308,	//Trolley protection, i threshold
+    reg_v_prot_limit 		=0x4000030C,	//Trolley protection, v limit
+    reg_i_prot_limit 		=0x40000310,	//Trolley protection, i limit
+    reg_command			=0x40000400,	//Trolley command
+    reg_comm_t_tid_stop		=0x40000404,	//Cycle Timing:
+    reg_comm_t_td_start		=0x40000408,	//Cycle Timing:
+    reg_comm_t_td		=0x4000040C,	//Cycle Timing:
+    reg_comm_t_td_stop		=0x40000410,	//Cycle Timing:
+    reg_comm_t_switch_rf	=0x40000414,	//Cycle Timing:
+    reg_comm_t_power_on		=0x40000418,	//Cycle Timing:
+    reg_comm_t_rf_on		=0x4000041C,	//Cycle Timing:
+    reg_comm_t_switch_comm	=0x40000420,	//Cycle Timing:
+    reg_comm_t_tid_start	=0x40000424,	//Cycle Timing:
+    reg_comm_t_cycle_length	=0x40000428,	//Cycle Timing:
 
-    reg_nmr_rf_prescale		=0x4000043C,
-    reg_nmr_rf_probe_select	=0x40000440,
-    reg_nmr_rf_probe_delay	=0x40000444,
-    reg_nmr_rf_probe_period	=0x40000448,
-    reg_nmr_rf_preamp_delay	=0x4000044C,
-    reg_nmr_rf_preamp_period	=0x40000450,
-    reg_nmr_rf_gate_delay	=0x40000454,
-    reg_nmr_rf_gate_period	=0x40000458,
-    reg_nmr_rf_transmit_delay	=0x4000045C,
-    reg_nmr_rf_transmit_period	=0x40000460,
+    reg_bc_sample_period	=0x4000042C,	//Barcode ADC: 
+    reg_bc_t_acq		=0x40000430,	//Barcode ADC:
+    reg_bc_refdac1		=0x40000434,	//Barcode ADC:
+    reg_bc_refdac2		=0x40000438,	//Barcode ADC:
+    reg_bc_refcm		=0x4000043C,	//Barcode ADC:
 
-    reg_bc_sample_period	=0x40000464,
-    reg_bc_t_acq		=0x40000468,
-    reg_bc_refdac1		=0x4000046C,
-    reg_bc_refdac2		=0x40000470,
-    reg_bc_refcm		=0x40000474,
+    reg_power_control1		=0x40000440,	//Power Control:
+    reg_power_control2		=0x40000444,	//Power Control:
 
-    reg_power_control1		=0x40000478,
-    reg_power_control2		=0x4000047C,
-    reg_eof			=0x40000480,
-    reg_flash_test1		=0x40000484,
-    reg_flash_test2		=0x40000488,
-    reg_unused_1		=0x4000048C,
+    reg_nmr_rf_prescale		=0x40000448,	//NMR Sequencing
+    reg_ti_switch_rf_offset	=0x40000480,	//Cycle Timing:
+    reg_ti_switch_comm_offset	=0x40000484,	//Cycle Timing:
 
-    reg_trolley_power		=0x40000680,
-    reg_trolley_power_set	=0x40000684,
+    reg_timestamp_control	=0x40000600,	//Timing
+    reg_timestamp_latch		=0x40000604,	//Timing
+    reg_utc_time 		=0x40000608,	//Timing
+    reg_timestamp_0 		=0x4000060C,	//Timing
+    reg_timestamp_1		=0x40000610,	//Timing
+    reg_irig_hms 		=0x40000614,	//Timing
+    reg_irig_yd 		=0x40000618,	//Timing
+    reg_irig_second_of_the_day 	=0x4000061C,	//Timing
+    reg_irig_control_function 	=0x40000620,	//Timing
+    reg_irig_raw_data_0 	=0x40000624,	//Timing
+    reg_irig_raw_data_1 	=0x40000628,	//Timing
+    reg_irig_raw_data_2 	=0x4000062C,	//Timing
+    reg_irig_cycle_count 	=0x40000630,	//Timing
+    reg_irig_phase_meas 	=0x40000634,	//Timing
+    reg_irig_100pps_phase_meas	=0x40000638,	//Timing
+    reg_irig_1khz_phase_meas 	=0x4000063C,	//Timing
+    reg_irig_phase_offset 	=0x40000640,	//Timing
 
-    reg_free_event_memory	=0x40000994,
-    reg_event_data_control	=0x40000944,
+    reg_led_control		=0x40000670,
+    reg_led_status		=0x40000674,
+
+    reg_trolley_ldo_config	=0x40000680,
+    reg_trolley_ldo_config_load	=0x40000684,
+    reg_trolley_ldo_status	=0x40000688,
+
+    reg_timing_control		=0x40000700,
+    reg_diag_control		=0x40000704,
+    reg_comm_fpga_fw_build	=0x40000810,
+    reg_event_data_control	=0x40000944,	//Data folow On/Off, On=0, Off=1
+    reg_free_event_memory	=0x40000994,	//Free event memory
+
+    reg_comm_act_led		=0x40000A00,	//Internal Use Onlly
+    reg_comm_link_led		=0x40000A04,	//Internal Use Onlly
+    reg_event_data_head		=0x40000B00,	//Internal Use Onlly
+    reg_event_data_tail		=0x40000B04,	//Internal Use Onlly
+    reg_dsp_flash_control	=0x40000C00,	//Internal Use Onlly
+
+    //FIFO
+    fifo_out_nmr_seq_data	=0x40000F00,
+    fifo_out_flash_data		=0x40000F04,
+    fifo_out_test_data		=0x40000F08,
+    fifo_in_test_data		=0x40000F0C
   };
-
   //==============================================================================
   // Types
   //==============================================================================
+  
+  typedef struct _NMR_Config {
+    unsigned int NMR_Command;
+    unsigned int NMR_Preamp_Delay;
+    unsigned int NMR_Preamp_Period;	
+    unsigned int NMR_ADC_Gate_Delay;
+    unsigned int NMR_ADC_Gate_Offset;
+    unsigned int NMR_ADC_Gate_Period;												
+    unsigned int NMR_TX_Delay;
+    unsigned int NMR_TX_Period;
+    unsigned int User_Defined_Data;
+  } NMR_Config;
 
   typedef struct _Ctrl_Header {
     unsigned int length;
@@ -224,7 +262,7 @@ namespace TrolleyInterface{
   int DeviceArrayWrite(unsigned int address, unsigned int size, unsigned int* data);
 
   // Event Data functions
-  int DataReceive (void* data);
+  int DataReceive (void* A_data, void* B_daba, unsigned int & A_size, unsigned int & B_size);
   int DevicePurgeData				(void);
 
   // Internal use only

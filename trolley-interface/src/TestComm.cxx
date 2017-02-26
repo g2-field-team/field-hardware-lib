@@ -95,9 +95,12 @@ int main(int argc,char **argv){
   int FrameSize = 0;
   //Frame buffer
   unsigned short* Frame = new unsigned short[MAX_PAYLOAD_DATA/sizeof(unsigned short)];
+  unsigned short* FrameB = new unsigned short[MAX_PAYLOAD_DATA/sizeof(unsigned short)];
+  unsigned int sizeA;
+  unsigned int sizeB;
 
   //Read first frame and sync
-  int rc = DataReceive((void *)Frame);
+  int rc = DataReceive((void *)Frame, (void *)FrameB, sizeA, sizeB);
   if (rc<0){
     cout <<"Data Error code "<<rc<<endl;
     return -1;
@@ -129,7 +132,7 @@ int main(int argc,char **argv){
   if (NBarcodes>NCycle)NCycle = NBarcodes;
   while (i<NCycle){
     //Read Frame
-    rc = DataReceive((void *)Frame);
+    rc = DataReceive((void *)Frame, (void *)FrameB, sizeA, sizeB);
     if (rc<0){
       cout <<"Data Error code "<<rc<<endl;
       return -1;
@@ -244,7 +247,7 @@ int main(int argc,char **argv){
   f.Close();
   //Test file operations
   while(1){
-    int rc = DataReceive((void *)Frame);
+    int rc = DataReceive((void *)Frame, (void *)FrameB, sizeA, sizeB);
     if (rc<0){
       cout <<"Data Error code "<<rc<<endl;
       return -1;

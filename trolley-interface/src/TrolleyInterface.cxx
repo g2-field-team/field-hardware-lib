@@ -171,7 +171,7 @@ namespace TrolleyInterface{
   }
 
   // This is the software's data interface function to the TCP/IP driver.
-  int DataReceive (void* data)
+  int DataReceive (void* data, void* B_daba, unsigned int & A_size, unsigned int & B_size)
   {
     int	error	 = errorUnknown;
     int	rxStatus = 0;
