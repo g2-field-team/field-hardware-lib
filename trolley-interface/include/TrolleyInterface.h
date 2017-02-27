@@ -120,7 +120,9 @@ namespace TrolleyInterface{
     reg_i_prot_threshold	=0x40000308,	//Trolley protection, i threshold
     reg_v_prot_limit 		=0x4000030C,	//Trolley protection, v limit
     reg_i_prot_limit 		=0x40000310,	//Trolley protection, i limit
+
     reg_command			=0x40000400,	//Trolley command
+
     reg_comm_t_tid_stop		=0x40000404,	//Cycle Timing:
     reg_comm_t_td_start		=0x40000408,	//Cycle Timing:
     reg_comm_t_td		=0x4000040C,	//Cycle Timing:
@@ -272,6 +274,7 @@ namespace TrolleyInterface{
   int ClientTCPRead_ErrorCheck	(int rxStatus);
   int DeviceWriteMask	(unsigned int address, unsigned int mask, unsigned int value);
   int DeviceReadMask	(unsigned int address, unsigned int mask, unsigned int* value);
+  int DeviceLoadNMRSetting (NMR_Config NMR_Setting);
 
   // Data Processing Functions:
   //Not yet defined

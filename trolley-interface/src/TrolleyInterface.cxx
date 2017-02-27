@@ -715,6 +715,21 @@ namespace TrolleyInterface{
     trolleyReg.eventDataInterfaceSelect	= 0x40000020;	//	X"020",		X"00000000",	X"00000001",	X"00000001",	 
     trolleyReg.eventDataControl		= 0x40000144;	//	X"144",		X"0020001F",	X"FFFFFFFF",	X"0033001F",	reg_event_data_control
     trolleyReg.eventDataStatus		= 0x40000190;	//	X"190",		X"00000000",	X"FFFFFFFF",	X"00000000",	regin_event_data_status
+
+  }
+
+  int DeviceLoadNMRSetting (NMR_Config NMR_Setting)
+  {
+    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_Command);
+    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_Preamp_Delay);
+    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_Preamp_Period);
+    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_ADC_Gate_Delay);
+    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_ADC_Gate_Offset);
+    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_ADC_Gate_Period);
+    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_TX_Delay);
+    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_TX_Period);
+    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.User_Defined_Data);
+    return 0;
   }
 
 }//End namespace Trolley Interface
