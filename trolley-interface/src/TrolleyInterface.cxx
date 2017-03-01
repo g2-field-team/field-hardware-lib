@@ -109,7 +109,7 @@ namespace TrolleyInterface{
        cout << inbuffer<<endl;
        ClientTCPRead(tcpDataHandle,inbuffer,256,5000);
        cout << inbuffer<<endl;
-     */
+       */
 
     // Set the event data interface to Ethernet
     DeviceWrite(trolleyReg.eventDataInterfaceSelect, 0x00000001);
@@ -171,21 +171,46 @@ namespace TrolleyInterface{
   }
 
   // This is the software's data interface function to the TCP/IP driver.
-  int DataReceive (void* data, void* B_daba, unsigned int & A_size, unsigned int & B_size)
+  int DataReceive (void (*const a_frame), void (*const b_frame), unsigned int (*const a_frame_length), unsigned int (*const b_frame_length))
   {
-    int	error	 = errorUnknown;
-    int	rxStatus = 0;
-    unsigned int dataExpected	= 0;
-    unsigned int dataReceived	= 0;
-    unsigned int packetLength	= 0;
-    unsigned int payloadLength	= 0;
-    unsigned short int preable_sync_buffer = 0;
+    int					error				= errorUnknown;
+    int					rxStatus			= 0;
+    unsigned int		dataExpected		= 0;
+    unsigned int		dataReceived		= 0;
+    unsigned int		packetLength		= 0;
+    unsigned int		payloadLength		= 0;
+    unsigned int		n_start				= 0;
+    unsigned int		n_delta				= 0;
+    static unsigned int	n_last				= 0;
+    unsigned int		t_start				= 0;
+    unsigned int		t_delta				= 0;
+    static unsigned int	t_last				= 0;
+    static unsigned int	t_delta_last		= 0;
+    unsigned short int	preable_sync_buffer	= 0;
+    unsigned short int	sint_value			= 0;
+    unsigned short int  int_value			= 0;
+    double				c_value[7];
+    double				d_value[3];
+    int 				i;
+    unsigned short int 	nmrWaveformLength;
+    unsigned int 		nmrWaveformChecksum;
+    unsigned int 		nmrWaveformChecksumCheckVal;
+    unsigned int 		frameChecksum;
+    unsigned int 		frameChecksumCheckVal;
+    unsigned int 		frameChecksumFirstSample;
+    unsigned int 		a_length;
+    unsigned int 		b_length;
 
-    dataReceived = 0;
+
+    a_length = 0;
+    b_length = 0;
+    *a_frame_length = 0;
+    *b_frame_length = 0;
+    dataReceived	= 0;
 
     data_sync_state = DSS_WORD_TEST;	// Initially assume that the data is aligned, at the word level.  Then check for the
     // the preamble sequence.  If it is not detected revert to byte-wise alignment.
-    do /* sync check loop */
+    do  //sync check loop 
     {
       if((data_sync_state == DSS_WORD_8000_BYTE_0_TEST) || (data_sync_state == DSS_WORD_8000_BYTE_1_TEST))
       {
@@ -196,7 +221,7 @@ namespace TrolleyInterface{
 	dataExpected = sizeof(unsigned short int);
       }
 
-      // Grab the data from the TCP driver
+      // Grab the data from the TCP driver, or File
       if (ReadFromFile){
 	if (FileStream.eof()){
 	  return errorEOF;
@@ -218,6 +243,7 @@ namespace TrolleyInterface{
 
       dataReceived += rxStatus;
       dataExpected -= rxStatus;
+
 
       // check if we received all the expected data
       if (dataExpected == 0)
@@ -262,7 +288,7 @@ namespace TrolleyInterface{
 	    }
 	    else if (preable_sync_buffer == 0x8000)
 	    {
-	      data_sync_state = DSS_WORD_7FFF;
+	      data_sync_state = DSS_WORD_AAAA;
 	    }
 	    else
 	    {
@@ -306,6 +332,10 @@ namespace TrolleyInterface{
 	    {
 	      data_sync_state = DSS_WORD_SUCCESS;
 	    }
+	    else if (preable_sync_buffer == 0xBBBB)
+	    {
+	      data_sync_state = DSS_WORD_SUCCESS;
+	    }
 	    else if (preable_sync_buffer == 0x7FFF)
 	    {
 	      data_sync_state = DSS_WORD_8000;
@@ -326,72 +356,193 @@ namespace TrolleyInterface{
       }
     } while((error == errorNoError) && (data_sync_state != DSS_WORD_SUCCESS));
 
+
     if (error) return error;
 
-    ((unsigned short int*)data)[0] = 0x7FFF;
-    ((unsigned short int*)data)[1] = 0x8000;
-    ((unsigned short int*)data)[2] = 0x7FFF;
-    ((unsigned short int*)data)[3] = 0x8000;
-    ((unsigned short int*)data)[4] = 0x7FFF;
-    ((unsigned short int*)data)[5] = 0x8000;
-    ((unsigned short int*)data)[6] = 0xAAAA;
+    packetLength = 0;
 
-    dataReceived = 7 * sizeof(unsigned short);
-
-    // Calculate the event packet payload size
-
-    // Fetch Event Packet Length
-    dataExpected = sizeof(unsigned int);
-    do
+    if (preable_sync_buffer == 0xAAAA)
     {
-      if (ReadFromFile){
-	if (FileStream.eof()){
-	  return errorEOF;
+
+      ((unsigned short int*)a_frame)[0] = 0x7FFF;
+      ((unsigned short int*)a_frame)[1] = 0x8000;
+      ((unsigned short int*)a_frame)[2] = 0x7FFF;
+      ((unsigned short int*)a_frame)[3] = 0x8000;
+      ((unsigned short int*)a_frame)[4] = 0x7FFF;
+      ((unsigned short int*)a_frame)[5] = 0x8000;
+      ((unsigned short int*)a_frame)[6] = 0xAAAA;
+
+      a_length = 7 * sizeof(unsigned short);
+
+      // Calculate the event packet payload size
+
+      // Fetch Event Packet Length
+      dataExpected = EVENT_HEADER_SIZE - a_length;
+      do
+      {
+	if (ReadFromFile){
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  FileStream.read((char *)(&(((unsigned char*)a_frame)[a_length])),dataExpected);
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  if (FileStream.fail()){
+	    return errorFileFail;
+	  }
+	  rxStatus = dataExpected;
+	  error = errorNoError;
+	}else{
+	  rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
+	  error = ClientTCPRead_ErrorCheck(rxStatus);
 	}
-	FileStream.read((char *)(&(((unsigned char*)data)[dataReceived])),dataExpected);
-	if (FileStream.eof()){
-	  return errorEOF;
-	}
-	if (FileStream.fail()){
-	  return errorFileFail;
-	}
-	rxStatus = dataExpected;
-	error = errorNoError;
-      }else{
-	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
-	error = ClientTCPRead_ErrorCheck(rxStatus);
+	if (error != errorNoError) break;
+
+	a_length += rxStatus; 
+	dataExpected -= rxStatus;
+      } while(dataExpected != 0);
+
+      packetLength	= (*((unsigned int*)(&(((unsigned short int*)a_frame)[7])))) * sizeof(unsigned char);
+
+      if ((unsigned short int)(((unsigned short int*)a_frame)[14]) > 0)
+      {
+	packetLength	-= 2;
+      }							
+      payloadLength	= packetLength - EVENT_HEADER_SIZE;
+
+      // Basic check of header data values
+      if (packetLength < EVENT_HEADER_SIZE) 
+      {
+	error = errorDataLength;	// Reported size of packet is smaller than a header!
+      } 
+      else if (payloadLength > MAX_PAYLOAD_DATA)
+      {
+	error = errorDataLength;	// Reported size of waveform is too large!
       }
-      if (error != errorNoError) break;
 
-      dataReceived += rxStatus; 
-      dataExpected -= rxStatus;
-    } while(dataExpected != 0);
+      if (error) return error; 
 
-    packetLength	= (*((unsigned int*)(&(((unsigned short int*)data)[7])))) * sizeof(unsigned char);
-    payloadLength	= packetLength - EVENT_HEADER_SIZE;
+      dataExpected = packetLength - a_length;
 
-    // Basic check of header data values
-    if (packetLength < EVENT_HEADER_SIZE) 
+      // Fetch Event Payload
+      do
+      {
+	if (ReadFromFile){
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  FileStream.read((char *)(&(((unsigned char*)a_frame)[a_length])),dataExpected);
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  if (FileStream.fail()){
+	    return errorFileFail;
+	  }
+	  rxStatus = dataExpected;
+	  error = errorNoError;
+	}else{
+	  rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
+	  error = ClientTCPRead_ErrorCheck(rxStatus);
+	}
+	if (error != errorNoError) break;
+
+	a_length += rxStatus; 
+	dataExpected -= rxStatus;
+      } while(dataExpected != 0);
+
+      if (error) return error;
+      /*	
+		nmrWaveformLength =  (unsigned short int)(((unsigned short int*)data)[12]);
+
+		if(nmrWaveformLength > 0) 
+		{
+		nmrWaveformChecksum = (*((unsigned int*)(&(((unsigned short int*)data)[46]))));
+
+		nmrWaveformChecksumCheckVal = 0;
+		for (i = 0; i < nmrWaveformLength; i++)
+		{
+		nmrWaveformChecksumCheckVal += ((unsigned short int*)data)[96 + i];
+		if(nmrWaveformChecksumCheckVal == nmrWaveformChecksum) break;
+		}
+
+		if(nmrWaveformChecksumCheckVal != nmrWaveformChecksum)
+		{
+      //		error = -123;
+      numNMRChecksumErrors++;
+      }
+      }
+
+      SetCtrlVal(3,DigMain_numNMRChecksumErrors,numNMRChecksumErrors);
+
+      frameChecksum = (*((unsigned int*)(&(((unsigned short int*)data)[(packetLength-4)/2]))));
+
+      frameChecksumCheckVal = 0;
+      for (i = 0; i < (packetLength/2); i++)
+      {
+      frameChecksumCheckVal += ((unsigned short int*)data)[i];
+      if(frameChecksumCheckVal == frameChecksum) break;
+      if((frameChecksumCheckVal + 0x00007FFF) == frameChecksum) break;
+      }
+
+      if((frameChecksumCheckVal != frameChecksum) && ((frameChecksumCheckVal + 0x00007FFF) != frameChecksum))
+      {
+      //		error = -123;
+      numFrameChecksumErrors++;
+      }
+
+      SetCtrlVal(3,DigMain_numFrameChecksumError,numFrameChecksumErrors);
+
+      numTotalCycles++;								   
+      SetCtrlVal(3,DigMain_numTotalCycles,numTotalCycles);
+
+      n_start =  (*((unsigned int*)(&(((unsigned short int*)a_frame)[9]))));
+      n_delta = n_start - n_last;
+      if((n_delta > 1)) 
+      {
+      //		error = -125;
+      numMissed++;
+      }
+      n_last =  n_start;
+      if (error) return error; 
+
+      t_start =  (*((unsigned int*)(&(((unsigned short int*)a_frame)[34]))));
+      t_delta = t_start - t_last;
+      if((t_delta > (t_delta_last + 40)) || (t_delta < (t_delta_last - 40))) 
+      {
+      //		error = -123;
+      numDropped++;
+      }
+      t_last =  t_start;
+      t_delta_last = t_delta;
+      SetCtrlVal(3,DigMain_numDroppedFrames,numDropped); 
+
+      if (error) return error;
+      */
+
+    }
+    else
     {
-      error = errorDataLength;	// Reported size of packet is smaller than a header!
-    } 
-    else if (payloadLength > MAX_PAYLOAD_DATA)
-    {
-      error = errorDataLength;	// Reported size of waveform is too large!
+      ((unsigned short int*)b_frame)[0] = 0x8000;
+      ((unsigned short int*)b_frame)[1] = 0x7FFF;
+      ((unsigned short int*)b_frame)[2] = 0x8000;
+      ((unsigned short int*)b_frame)[3] = 0xBBBB;
+
+      b_length = 4 * sizeof(unsigned short);	
     }
 
-    if (error) return error; 
+    packetLength =  36 * sizeof(unsigned short int);
 
-    dataExpected = packetLength - dataReceived;
+    dataExpected = packetLength - b_length;
 
-    // Fetch Event Payload
+    // 
     do
     {
       if (ReadFromFile){
 	if (FileStream.eof()){
 	  return errorEOF;
 	}
-	FileStream.read((char *)(&(((unsigned char*)data)[dataReceived])),dataExpected);
+	FileStream.read((char *)(&(((unsigned char*)b_frame)[b_length])),dataExpected);
 	if (FileStream.eof()){
 	  return errorEOF;
 	}
@@ -401,20 +552,258 @@ namespace TrolleyInterface{
 	rxStatus = dataExpected;
 	error = errorNoError;
       }else{
-	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)data)[dataReceived])), dataExpected, tcpDataTimeout);
+	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
 	error = ClientTCPRead_ErrorCheck(rxStatus);
       }
       if (error != errorNoError) break;
 
-      dataReceived += rxStatus; 
+      b_length += rxStatus; 
       dataExpected -= rxStatus;
     } while(dataExpected != 0);
 
-    if (error) return error; 
+    if (error) return error;
 
-    return dataReceived;
+    packetLength += 2*(*((unsigned short int*)(&(((unsigned char*)b_frame)[b_length-54])))) * sizeof(unsigned short int);
+
+    dataExpected = packetLength - b_length;
+
+    if (dataExpected > 0) 
+    {
+      //
+      do
+      {
+	if (ReadFromFile){
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  FileStream.read((char *)(&(((unsigned char*)b_frame)[b_length])),dataExpected);
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  if (FileStream.fail()){
+	    return errorFileFail;
+	  }
+	  rxStatus = dataExpected;
+	  error = errorNoError;
+	}else{
+	  rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
+	  error = ClientTCPRead_ErrorCheck(rxStatus);
+	}
+	if (error != errorNoError) break;
+
+	b_length += rxStatus; 
+	dataExpected -= rxStatus;
+      } while(dataExpected != 0);
+
+      if (error) return error;
+    }
+
+    *a_frame_length = a_length;
+    *b_frame_length = b_length;
+
+    //	SetCtrlVal(3,DigMain_numMissedCycles,dataLost);
+
+
+    return error;
   }
 
+  void DataPreProcess (const void (*const a_frame), const void (*const b_frame), A_FRAME_INFO (*const a_frame_info), B_FRAME_INFO (*const b_frame_info))
+  {
+    const unsigned char (*const a_frame_uchar)	= (const unsigned char (*const))(a_frame);
+    const unsigned short int (*const a_frame_ushort) = (const unsigned short int (*const))(a_frame);
+    const unsigned long  int (*const a_frame_ulong) = (const unsigned long int (*const))(a_frame);
+    const unsigned long long int (*const a_frame_ulonglong) = (const unsigned long long int (*const))(a_frame);
+    const unsigned short int (*const b_frame_ushort) = (const unsigned short int (*const))(b_frame);
+    const unsigned long int (*const b_frame_ulong) = (const unsigned long int (*const))(b_frame);
+    const unsigned long long int (*const b_frame_ulonglong) = (const unsigned long long int (*const))(b_frame);
+
+    double c_value[7];
+    double d_value[2];
+    double dt_value;
+    double temp_value;
+    double temp_c_value;
+    double off_value;
+    double sens_value;
+    double temp_correction_value;
+    double off_correction_value;
+    double sens_correction_value;
+    double temp_2nd_value;
+    double temp_c_2nd_value;
+    double off_2nd_value;
+    double sens_2nd_value;
+    double p_2nd_value;
+    double pbar_2nd_value;
+
+    if (a_frame != NULL)
+    {
+      a_frame_info->frame_length = (*((unsigned int*)(&(a_frame_ushort[7]))));
+      a_frame_info->frame_number = (*((unsigned int*)(&(a_frame_ushort[9]))));
+      a_frame_info->probe_number = a_frame_uchar[22];
+      a_frame_info->power_status = a_frame_uchar[23];
+      a_frame_info->nmr_samples = a_frame_ushort[12];
+      a_frame_info->barcode_samples = a_frame_ushort[13];
+      a_frame_info->flash_data_length = a_frame_ushort[14];
+      a_frame_info->voltage_monitor_min[0] = 5.0 * (float)(a_frame_ushort[15]) / 65536.0 * 2.0;
+      a_frame_info->voltage_monitor_max[0] = 5.0 * (float)(a_frame_ushort[16]) / 65536.0 * 2.0;
+      a_frame_info->voltage_monitor_min[1] = 5.0 * (float)(a_frame_ushort[17]) / 65536.0;
+      a_frame_info->voltage_monitor_max[1] = 5.0 * (float)(a_frame_ushort[18]) / 65536.0;
+      a_frame_info->temperature_monitor[0] = (float)(a_frame_ushort[19]) / 128.0;
+      a_frame_info->temperature_monitor[1] = (float)(a_frame_ushort[20]) / 128.0;
+      a_frame_info->temperature_monitor[2] = (float)(a_frame_ushort[21]);	// No sensor
+      a_frame_info->temperature_monitor[3] = (float)(a_frame_ushort[22]);	// No sensor
+      a_frame_info->press_cal[0] = a_frame_ushort[23];
+      a_frame_info->press_cal[1] = a_frame_ushort[24];             
+      a_frame_info->press_cal[2] = a_frame_ushort[25];             
+      a_frame_info->press_cal[3] = a_frame_ushort[26];             
+      a_frame_info->press_cal[4] = a_frame_ushort[27];             
+      a_frame_info->press_cal[5] = a_frame_ushort[28];             
+      a_frame_info->press_cal[6] = a_frame_ushort[29];             
+      a_frame_info->press_raw_press = a_frame_ulong[15];
+      a_frame_info->press_raw_temp = a_frame_ulong[16];
+      a_frame_info->timestamp_cycle_start = a_frame_ulonglong[9];
+      a_frame_info->timestamp_nmr_start = a_frame_ulonglong[10];       
+      a_frame_info->timestamp_barcode_start = a_frame_ulonglong[11];   
+      a_frame_info->nmr_waveform_checksum = a_frame_ulong[23];
+      a_frame_info->nmr_timestamp_offset = a_frame_ushort[50];
+      a_frame_info->bc_config_out = a_frame_ushort[51];        
+      a_frame_info->bc_refdac1_out = a_frame_ushort[52];
+      a_frame_info->bc_refdac2_out = a_frame_ushort[53];
+      a_frame_info->bc_seqfifo_out = a_frame_ushort[54];        
+      a_frame_info->bc_refcm_out = a_frame_ushort[55];        
+      a_frame_info->rf_power_meas[0] = a_frame_ulong[30];
+      a_frame_info->rf_power_meas[1] = a_frame_ulong[31];
+
+      c_value[0] = (double)(a_frame_ushort[23]);
+      c_value[1] = (double)(a_frame_ushort[24]);             
+      c_value[2] = (double)(a_frame_ushort[25]);             
+      c_value[3] = (double)(a_frame_ushort[26]);             
+      c_value[4] = (double)(a_frame_ushort[27]);             
+      c_value[5] = (double)(a_frame_ushort[28]);             
+      c_value[6] = (double)(a_frame_ushort[29]);             
+      d_value[0] = (double)(a_frame_ulong[15]);
+      d_value[1] = (double)(a_frame_ulong[16]);
+      dt_value = d_value[1]-c_value[5]*((double)(1 << 8));
+      temp_value = 2000.0+dt_value*c_value[6]/((double)(1 << 23)); 
+      temp_c_value = temp_value /100.0;
+      off_value = c_value[2]*((double)(1 << 17))+(c_value[4]*dt_value)/((double)(1 << 6)); 
+      sens_value = c_value[1]*((double)(1 << 16))+(c_value[3]*dt_value)/((double)(1 << 7));
+
+      temp_2nd_value = temp_value;
+      off_2nd_value = off_value;
+      sens_2nd_value = sens_value;
+
+      if (temp_c_value >= 20)
+      {
+	temp_correction_value = 5.0 * (dt_value/((double)((unsigned long long int)(1) << 38))) * (dt_value/((double)((unsigned long long int)(1) << 38)));
+	off_correction_value = 0;
+	sens_correction_value = 0;
+      }
+      else if (temp_c_value < -15)
+      {
+	temp_correction_value = 3.0 * (dt_value/((double)((unsigned long long int)(1) << 33))) * (dt_value/((double)((unsigned long long int)(1) << 33)));    
+	off_correction_value = 61.0 * (temp_value-2000.0) * (temp_value-2000.0) / ((double)(1 << 4))+17*(temp_value+1500.0) * (temp_value+1500.0);
+	sens_correction_value = 29.0 * (temp_value-2000.0) * (temp_value-2000.0) / ((double)(1 << 4))+9*(temp_value+1500.0) * (temp_value+1500.0); 
+      }
+      else
+      {
+	temp_correction_value = 3.0 * (dt_value/((double)((unsigned long long int)(1) << 33))) * (dt_value/((double)((unsigned long long int)(1) << 33)));
+	off_correction_value = 61.0 * (temp_value-2000.0) * (temp_value-2000.0) / ((double)(1 << 4));
+	sens_correction_value = 29.0 * (temp_value-2000.0) * (temp_value-2000.0) / ((double)(1 << 4));
+      }
+      temp_2nd_value -= temp_correction_value;
+      off_2nd_value -= off_correction_value;
+      sens_2nd_value -= sens_correction_value;
+
+      temp_c_2nd_value = temp_2nd_value / 100.0;
+      p_2nd_value = (d_value[0] *sens_2nd_value/((double)(1 << 21))-off_2nd_value)/((double)(1 << 15));
+      pbar_2nd_value = p_2nd_value / 100.0;
+
+      a_frame_info->press_meas_press = pbar_2nd_value;  
+      a_frame_info->press_meas_temp = temp_c_2nd_value; 
+      a_frame_info->rf_power_factor =  ((double)(a_frame_info->rf_power_meas[1])) / ((double)(a_frame_info->rf_power_meas[0]));
+      a_frame_info->trolley_command_frame = &(a_frame_ushort[64]);
+
+      if (a_frame_info->nmr_samples > 0) 
+      {
+	a_frame_info->nmr_waveform = &(a_frame_ushort[96]);           
+      }
+      else
+      {
+	a_frame_info->nmr_waveform = NULL;
+      }
+
+      if (a_frame_info->barcode_samples > 0) 
+      {
+	a_frame_info->barcode_waveform[0][0] = &(a_frame_ushort[96]) + a_frame_info->nmr_samples;           
+	a_frame_info->barcode_waveform[0][1] = a_frame_info->barcode_waveform[0][0] + a_frame_info->barcode_samples; 
+	a_frame_info->barcode_waveform[0][2] = a_frame_info->barcode_waveform[0][1] + a_frame_info->barcode_samples; 
+	a_frame_info->barcode_waveform[1][0] = a_frame_info->barcode_waveform[0][1] + a_frame_info->barcode_samples; 
+	a_frame_info->barcode_waveform[1][1] = a_frame_info->barcode_waveform[1][0] + a_frame_info->barcode_samples; 
+	a_frame_info->barcode_waveform[1][2] = a_frame_info->barcode_waveform[1][1] + a_frame_info->barcode_samples; 
+	a_frame_info->voltage_monitor_waveform[0] = a_frame_info->barcode_waveform[1][2] + a_frame_info->barcode_samples; 
+	a_frame_info->voltage_monitor_waveform[1] = a_frame_info->voltage_monitor_waveform[0] + a_frame_info->barcode_samples;           
+      }
+      else
+      {
+	a_frame_info->barcode_waveform[0][0] = NULL;
+	a_frame_info->barcode_waveform[0][1] = NULL;
+	a_frame_info->barcode_waveform[0][2] = NULL;
+	a_frame_info->barcode_waveform[1][0] = NULL; 
+	a_frame_info->barcode_waveform[1][1] = NULL;
+	a_frame_info->barcode_waveform[1][2] = NULL;
+	a_frame_info->voltage_monitor_waveform[0] = NULL; 
+	a_frame_info->voltage_monitor_waveform[1] = NULL; 
+      }
+
+      if (a_frame_info->flash_data_length > 0) 
+      {
+	a_frame_info->flash_data = &(a_frame_uchar[192]) + (a_frame_info->nmr_samples * sizeof(short int)) + 6 * (a_frame_info->barcode_samples * sizeof(unsigned short int));  
+      }
+      else
+      {
+	a_frame_info->flash_data = NULL;
+      }
+    }
+
+    if (b_frame != NULL)
+    {
+      b_frame_info->mon_samples = b_frame_ushort[4];
+      b_frame_info->power_status = b_frame_ushort[5];
+      b_frame_info->ldo_status = b_frame_ushort[6];
+      b_frame_info->reserved = b_frame_ushort[7];
+      b_frame_info->timestamp_cycle_start_irig = b_frame_ulonglong[2];
+      b_frame_info->timestamp_cycle_start_local = b_frame_ulonglong[3];
+      b_frame_info->timestamp_monitor_start = b_frame_ulonglong[4];
+      b_frame_info->temperature_monitor_min = (float)(b_frame_ushort[20]) * (25.0 * 5.0 / 65536.0);
+      b_frame_info->temperature_monitor_max = (float)(b_frame_ushort[21]) * (25.0 * 5.0 / 65536.0);
+      b_frame_info->voltage_monitor_min[0] = (float)(b_frame_ushort[22]) * (-1.25 * 5.0 / 65536.0);  // -5.0V    
+      b_frame_info->voltage_monitor_max[0] = (float)(b_frame_ushort[23]) * (-1.25 * 5.0 / 65536.0);  // -5.0V    
+      b_frame_info->voltage_monitor_min[1] = (float)(b_frame_ushort[24]) * (3.75 * 5.0 / 65536.0);  // 15.0V 
+      b_frame_info->voltage_monitor_max[1] = (float)(b_frame_ushort[25]) * (3.75 * 5.0 / 65536.0);  // 15.0V 
+      b_frame_info->voltage_monitor_min[2] = (float)(b_frame_ushort[26]) * (1.25 * 5.0 / 65536.0);  // 5.0V
+      b_frame_info->voltage_monitor_max[2] = (float)(b_frame_ushort[27]) * (1.25 * 5.0 / 65536.0);  // 5.0V
+      b_frame_info->voltage_monitor_min[3] = (float)(b_frame_ushort[28]) * (1.00 * 5.0 / 65536.0);  // 3.3V
+      b_frame_info->voltage_monitor_max[3] = (float)(b_frame_ushort[29]) * (1.00 * 5.0 / 65536.0);  // 3.3V
+      b_frame_info->rf_power_meas[0] = b_frame_ulong[15];
+      b_frame_info->rf_power_meas[1] = b_frame_ulong[16];
+      b_frame_info->reg_ti_switch_rf_offset = b_frame_ushort[34];
+      b_frame_info->reg_ti_switch_comm_offset = b_frame_ushort[35];
+
+      b_frame_info->rf_power_factor =  ((double)(b_frame_info->rf_power_meas[0])) / ((double)(b_frame_info->rf_power_meas[1]));
+
+      if (b_frame_info->mon_samples > 0) 
+      {
+	b_frame_info->v_mon_waveform = &(b_frame_ushort[31]);           
+	b_frame_info->i_mon_waveform = &(b_frame_ushort[31]) + b_frame_info->mon_samples;         
+      }
+      else
+      {
+	b_frame_info->v_mon_waveform = NULL;
+	b_frame_info->i_mon_waveform = NULL;
+      }
+    }
+    return;
+  }
 
   // This is the software's slow control interface function to the TCP/IP driver.
   int SendReceive (Ctrl_Packet* tx, Ctrl_Packet* rx)

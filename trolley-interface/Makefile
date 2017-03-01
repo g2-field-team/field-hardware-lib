@@ -2,6 +2,7 @@ CXX=g++
 SRC_DIR = ./src
 INC_DIR = ./include
 LIB_DIR = ./lib
+#LIB_DIR = /usr/local/lib
 BUILD_DIR = ./build
 BIN_DIR = ./bin
 
@@ -11,7 +12,7 @@ LIBINSTALLDIR=$(PREFIX)/lib
 INCINSTALLDIR=$(PREFIX)/include/g2field
 
 DEPS=$(INC_DIR)/TCPDrivers.h $(INC_DIR)/TrolleyInterface.h $(INC_DIR)/Sg382Interface.h
-CFLAGS = -I$(INC_DIR) -Wl,-rpath,$(LIB_DIR)
+CFLAGS = -I$(INC_DIR) -Wl,-rpath,$(LIB_DIR) -fpermissive
 LIBFLAGS = -L$(LIB_DIR) -ltrolleyinterface -lsg382interface
 
 all: $(BIN_DIR)/TestComm $(BIN_DIR)/TestCommSg382 $(LIB_DIR)/libtrolleyinterface.so $(LIB_DIR)/libsg382interface.so
