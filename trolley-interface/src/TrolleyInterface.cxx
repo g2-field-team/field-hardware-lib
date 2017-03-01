@@ -179,37 +179,21 @@ namespace TrolleyInterface{
     unsigned int		dataReceived		= 0;
     unsigned int		packetLength		= 0;
     unsigned int		payloadLength		= 0;
-    unsigned int		n_start				= 0;
-    unsigned int		n_delta				= 0;
-    static unsigned int	n_last				= 0;
-    unsigned int		t_start				= 0;
-    unsigned int		t_delta				= 0;
-    static unsigned int	t_last				= 0;
-    static unsigned int	t_delta_last		= 0;
     unsigned short int	preable_sync_buffer	= 0;
     unsigned short int	sint_value			= 0;
     unsigned short int  int_value			= 0;
-    double				c_value[7];
-    double				d_value[3];
     int 				i;
-    unsigned short int 	nmrWaveformLength;
-    unsigned int 		nmrWaveformChecksum;
-    unsigned int 		nmrWaveformChecksumCheckVal;
-    unsigned int 		frameChecksum;
-    unsigned int 		frameChecksumCheckVal;
-    unsigned int 		frameChecksumFirstSample;
     unsigned int 		a_length;
     unsigned int 		b_length;
-
-
     a_length = 0;
     b_length = 0;
     *a_frame_length = 0;
     *b_frame_length = 0;
     dataReceived	= 0;
-
     data_sync_state = DSS_WORD_TEST;	// Initially assume that the data is aligned, at the word level.  Then check for the
+
     // the preamble sequence.  If it is not detected revert to byte-wise alignment.
+
     do  //sync check loop 
     {
       if((data_sync_state == DSS_WORD_8000_BYTE_0_TEST) || (data_sync_state == DSS_WORD_8000_BYTE_1_TEST))
@@ -221,31 +205,17 @@ namespace TrolleyInterface{
 	dataExpected = sizeof(unsigned short int);
       }
 
-      // Grab the data from the TCP driver, or File
-      if (ReadFromFile){
-	if (FileStream.eof()){
-	  return errorEOF;
-	}
-	FileStream.read((char *)&preable_sync_buffer,dataExpected);
-	if (FileStream.eof()){
-	  return errorEOF;
-	}
-	if (FileStream.fail()){
-	  return errorFileFail;
-	}
-	rxStatus = dataExpected;
-	error = errorNoError;
-      }else{
-	rxStatus = ClientTCPRead(tcpDataHandle, &preable_sync_buffer, dataExpected, tcpDataTimeout);
-	error = ClientTCPRead_ErrorCheck(rxStatus);
-      }
+
+      // Grab the data from the TCP driver
+      rxStatus = ClientTCPRead(tcpDataHandle, &preable_sync_buffer, dataExpected, tcpDataTimeout);
+      error = ClientTCPRead_ErrorCheck(rxStatus);
       if (error != errorNoError) break;
 
       dataReceived += rxStatus;
       dataExpected -= rxStatus;
 
-
       // check if we received all the expected data
+
       if (dataExpected == 0)
       {
 	switch (data_sync_state)
@@ -264,7 +234,6 @@ namespace TrolleyInterface{
 	      dataReceived = 0;
 	    }
 	    break;
-
 	  case DSS_WORD_8000_BYTE_1_TEST:
 	    if ((preable_sync_buffer & 0x00FF) == 0x0080)
 	    {
@@ -280,7 +249,6 @@ namespace TrolleyInterface{
 	      dataReceived = 0;
 	    }
 	    break;
-
 	  case DSS_WORD_TEST:
 	    if (preable_sync_buffer == 0x7FFF)
 	    {
@@ -298,7 +266,6 @@ namespace TrolleyInterface{
 	      dataReceived = 0;
 	    }
 	    break;
-
 	  case DSS_WORD_7FFF:
 	    if (preable_sync_buffer == 0x7FFF)
 	    {
@@ -312,7 +279,6 @@ namespace TrolleyInterface{
 	      dataReceived = 0;
 	    }
 	    break;
-
 	  case DSS_WORD_8000:
 	    if (preable_sync_buffer == 0x8000)
 	    {
@@ -326,7 +292,6 @@ namespace TrolleyInterface{
 	      dataReceived = 0;
 	    }
 	    break;
-
 	  case DSS_WORD_AAAA:
 	    if (preable_sync_buffer == 0xAAAA)
 	    {
@@ -348,7 +313,6 @@ namespace TrolleyInterface{
 	      dataReceived = 0;
 	    }
 	    break;
-
 	  default:
 	    error = errorUnknown; 
 	    break;
@@ -356,14 +320,11 @@ namespace TrolleyInterface{
       }
     } while((error == errorNoError) && (data_sync_state != DSS_WORD_SUCCESS));
 
-
     if (error) return error;
 
     packetLength = 0;
-
     if (preable_sync_buffer == 0xAAAA)
     {
-
       ((unsigned short int*)a_frame)[0] = 0x7FFF;
       ((unsigned short int*)a_frame)[1] = 0x8000;
       ((unsigned short int*)a_frame)[2] = 0x7FFF;
@@ -371,46 +332,24 @@ namespace TrolleyInterface{
       ((unsigned short int*)a_frame)[4] = 0x7FFF;
       ((unsigned short int*)a_frame)[5] = 0x8000;
       ((unsigned short int*)a_frame)[6] = 0xAAAA;
-
       a_length = 7 * sizeof(unsigned short);
-
       // Calculate the event packet payload size
-
       // Fetch Event Packet Length
       dataExpected = EVENT_HEADER_SIZE - a_length;
       do
       {
-	if (ReadFromFile){
-	  if (FileStream.eof()){
-	    return errorEOF;
-	  }
-	  FileStream.read((char *)(&(((unsigned char*)a_frame)[a_length])),dataExpected);
-	  if (FileStream.eof()){
-	    return errorEOF;
-	  }
-	  if (FileStream.fail()){
-	    return errorFileFail;
-	  }
-	  rxStatus = dataExpected;
-	  error = errorNoError;
-	}else{
-	  rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
-	  error = ClientTCPRead_ErrorCheck(rxStatus);
-	}
+	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
+	error = ClientTCPRead_ErrorCheck(rxStatus);
 	if (error != errorNoError) break;
-
 	a_length += rxStatus; 
 	dataExpected -= rxStatus;
       } while(dataExpected != 0);
-
       packetLength	= (*((unsigned int*)(&(((unsigned short int*)a_frame)[7])))) * sizeof(unsigned char);
-
       if ((unsigned short int)(((unsigned short int*)a_frame)[14]) > 0)
       {
 	packetLength	-= 2;
       }							
       payloadLength	= packetLength - EVENT_HEADER_SIZE;
-
       // Basic check of header data values
       if (packetLength < EVENT_HEADER_SIZE) 
       {
@@ -420,106 +359,20 @@ namespace TrolleyInterface{
       {
 	error = errorDataLength;	// Reported size of waveform is too large!
       }
-
       if (error) return error; 
-
       dataExpected = packetLength - a_length;
-
       // Fetch Event Payload
       do
       {
-	if (ReadFromFile){
-	  if (FileStream.eof()){
-	    return errorEOF;
-	  }
-	  FileStream.read((char *)(&(((unsigned char*)a_frame)[a_length])),dataExpected);
-	  if (FileStream.eof()){
-	    return errorEOF;
-	  }
-	  if (FileStream.fail()){
-	    return errorFileFail;
-	  }
-	  rxStatus = dataExpected;
-	  error = errorNoError;
-	}else{
-	  rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
-	  error = ClientTCPRead_ErrorCheck(rxStatus);
-	}
+	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
+	error = ClientTCPRead_ErrorCheck(rxStatus);
 	if (error != errorNoError) break;
-
 	a_length += rxStatus; 
 	dataExpected -= rxStatus;
       } while(dataExpected != 0);
 
-      if (error) return error;
-      /*	
-		nmrWaveformLength =  (unsigned short int)(((unsigned short int*)data)[12]);
-
-		if(nmrWaveformLength > 0) 
-		{
-		nmrWaveformChecksum = (*((unsigned int*)(&(((unsigned short int*)data)[46]))));
-
-		nmrWaveformChecksumCheckVal = 0;
-		for (i = 0; i < nmrWaveformLength; i++)
-		{
-		nmrWaveformChecksumCheckVal += ((unsigned short int*)data)[96 + i];
-		if(nmrWaveformChecksumCheckVal == nmrWaveformChecksum) break;
-		}
-
-		if(nmrWaveformChecksumCheckVal != nmrWaveformChecksum)
-		{
-      //		error = -123;
-      numNMRChecksumErrors++;
-      }
-      }
-
-      SetCtrlVal(3,DigMain_numNMRChecksumErrors,numNMRChecksumErrors);
-
-      frameChecksum = (*((unsigned int*)(&(((unsigned short int*)data)[(packetLength-4)/2]))));
-
-      frameChecksumCheckVal = 0;
-      for (i = 0; i < (packetLength/2); i++)
-      {
-      frameChecksumCheckVal += ((unsigned short int*)data)[i];
-      if(frameChecksumCheckVal == frameChecksum) break;
-      if((frameChecksumCheckVal + 0x00007FFF) == frameChecksum) break;
-      }
-
-      if((frameChecksumCheckVal != frameChecksum) && ((frameChecksumCheckVal + 0x00007FFF) != frameChecksum))
-      {
-      //		error = -123;
-      numFrameChecksumErrors++;
-      }
-
-      SetCtrlVal(3,DigMain_numFrameChecksumError,numFrameChecksumErrors);
-
-      numTotalCycles++;								   
-      SetCtrlVal(3,DigMain_numTotalCycles,numTotalCycles);
-
-      n_start =  (*((unsigned int*)(&(((unsigned short int*)a_frame)[9]))));
-      n_delta = n_start - n_last;
-      if((n_delta > 1)) 
-      {
-      //		error = -125;
-      numMissed++;
-      }
-      n_last =  n_start;
-      if (error) return error; 
-
-      t_start =  (*((unsigned int*)(&(((unsigned short int*)a_frame)[34]))));
-      t_delta = t_start - t_last;
-      if((t_delta > (t_delta_last + 40)) || (t_delta < (t_delta_last - 40))) 
-      {
-      //		error = -123;
-      numDropped++;
-      }
-      t_last =  t_start;
-      t_delta_last = t_delta;
-      SetCtrlVal(3,DigMain_numDroppedFrames,numDropped); 
 
       if (error) return error;
-      */
-
     }
     else
     {
@@ -527,85 +380,40 @@ namespace TrolleyInterface{
       ((unsigned short int*)b_frame)[1] = 0x7FFF;
       ((unsigned short int*)b_frame)[2] = 0x8000;
       ((unsigned short int*)b_frame)[3] = 0xBBBB;
-
       b_length = 4 * sizeof(unsigned short);	
     }
-
     packetLength =  36 * sizeof(unsigned short int);
-
     dataExpected = packetLength - b_length;
-
     // 
     do
     {
-      if (ReadFromFile){
-	if (FileStream.eof()){
-	  return errorEOF;
-	}
-	FileStream.read((char *)(&(((unsigned char*)b_frame)[b_length])),dataExpected);
-	if (FileStream.eof()){
-	  return errorEOF;
-	}
-	if (FileStream.fail()){
-	  return errorFileFail;
-	}
-	rxStatus = dataExpected;
-	error = errorNoError;
-      }else{
-	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
-	error = ClientTCPRead_ErrorCheck(rxStatus);
-      }
+      rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
+      error = ClientTCPRead_ErrorCheck(rxStatus);
       if (error != errorNoError) break;
-
       b_length += rxStatus; 
       dataExpected -= rxStatus;
     } while(dataExpected != 0);
-
     if (error) return error;
-
-    packetLength += 2*(*((unsigned short int*)(&(((unsigned char*)b_frame)[b_length-54])))) * sizeof(unsigned short int);
-
+    packetLength += 2*(*((unsigned short int*)(&(((unsigned char*)b_frame)[b_length-64])))) * sizeof(unsigned short int);
     dataExpected = packetLength - b_length;
-
     if (dataExpected > 0) 
     {
       //
       do
       {
-	if (ReadFromFile){
-	  if (FileStream.eof()){
-	    return errorEOF;
-	  }
-	  FileStream.read((char *)(&(((unsigned char*)b_frame)[b_length])),dataExpected);
-	  if (FileStream.eof()){
-	    return errorEOF;
-	  }
-	  if (FileStream.fail()){
-	    return errorFileFail;
-	  }
-	  rxStatus = dataExpected;
-	  error = errorNoError;
-	}else{
-	  rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
-	  error = ClientTCPRead_ErrorCheck(rxStatus);
-	}
+	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
+	error = ClientTCPRead_ErrorCheck(rxStatus);
 	if (error != errorNoError) break;
-
 	b_length += rxStatus; 
 	dataExpected -= rxStatus;
       } while(dataExpected != 0);
-
       if (error) return error;
     }
-
     *a_frame_length = a_length;
     *b_frame_length = b_length;
-
-    //	SetCtrlVal(3,DigMain_numMissedCycles,dataLost);
-
-
     return error;
   }
+  
 
   void DataPreProcess (const void (*const a_frame), const void (*const b_frame), A_FRAME_INFO (*const a_frame_info), B_FRAME_INFO (*const b_frame_info))
   {

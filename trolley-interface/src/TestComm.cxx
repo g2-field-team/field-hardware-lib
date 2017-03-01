@@ -65,7 +65,7 @@ int main(int argc,char **argv){
     NBarcodes = atoi(argv[2]);
   }
 
-/*
+
   int err = DeviceConnect("192.168.1.123");
   if (err<0)return -1;
   cout <<"connection good"<<endl;
@@ -77,16 +77,16 @@ int main(int argc,char **argv){
   cout <<err<<" "<<LEDV<< " "<<LEDDisable<<endl;
   DevicePurgeData();
   DeviceWriteMask(0x40000944,0x00000001,0x00000000);
-*/
+
   //Receive Data
   char buffer[1000];
 //  err = DataReceive(buffer);
 //  cout <<err<<endl;
 
   //Connect to file
-  const char * filename = "/home/newg2/Applications/field-daq/resources/NMRDataTemp/data-2017-02-28_20-08-11.dat"; 
+/*  const char * filename = "/home/newg2/Applications/field-daq/resources/NMRDataTemp/data-2017-02-28_20-08-11.dat"; 
   int err = FileOpen(filename);
-
+*/
   //cout <<err<<endl;
   //Try to get some data
 
@@ -257,10 +257,10 @@ int main(int argc,char **argv){
   }
 
   //Disconnect
-/*  DeviceWriteMask(0x40000944,0x00000001,0x00000000);
+  DeviceWriteMask(0x40000944,0x00000001,0x00000001);
   err = DeviceDisconnect();
-*/
-  FileClose();
+
+ // FileClose();
   //cout <<err<<endl;
   delete []Frame;
   delete []FrameB;
