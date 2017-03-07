@@ -165,7 +165,7 @@ namespace TrolleyInterface{
     int rxStatus = 0;
     do
     {
-      rxStatus = ClientTCPRead(tcpDataHandle, (unsigned int*)(TCPdata), sizeof(TCPdata), 100);
+      rxStatus = ClientTCPRead(tcpDataHandle, (unsigned int*)(TCPdata), sizeof(TCPdata), tcpDataTimeout);
     } while(rxStatus > 0);
     return error;
   }
@@ -205,10 +205,24 @@ namespace TrolleyInterface{
 	dataExpected = sizeof(unsigned short int);
       }
 
-
       // Grab the data from the TCP driver
-      rxStatus = ClientTCPRead(tcpDataHandle, &preable_sync_buffer, dataExpected, tcpDataTimeout);
-      error = ClientTCPRead_ErrorCheck(rxStatus);
+      if (ReadFromFile){
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
+	FileStream.read((char *)&preable_sync_buffer,dataExpected);
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
+	if (FileStream.fail()){
+	  return errorFileFail;
+	}
+	rxStatus = dataExpected;
+	error = errorNoError;
+      }else{
+	rxStatus = ClientTCPRead(tcpDataHandle, &preable_sync_buffer, dataExpected, tcpDataTimeout);
+	error = ClientTCPRead_ErrorCheck(rxStatus);
+      }
       if (error != errorNoError) break;
 
       dataReceived += rxStatus;
@@ -338,8 +352,23 @@ namespace TrolleyInterface{
       dataExpected = EVENT_HEADER_SIZE - a_length;
       do
       {
-	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
-	error = ClientTCPRead_ErrorCheck(rxStatus);
+	if (ReadFromFile){
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  FileStream.read((char *)(&(((unsigned char*)a_frame)[a_length])),dataExpected);
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  if (FileStream.fail()){
+	    return errorFileFail;
+	  }
+	  rxStatus = dataExpected;
+	  error = errorNoError;
+	}else{
+	  rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
+	  error = ClientTCPRead_ErrorCheck(rxStatus);
+	}
 	if (error != errorNoError) break;
 	a_length += rxStatus; 
 	dataExpected -= rxStatus;
@@ -364,8 +393,23 @@ namespace TrolleyInterface{
       // Fetch Event Payload
       do
       {
-	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
-	error = ClientTCPRead_ErrorCheck(rxStatus);
+	if (ReadFromFile){
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  FileStream.read((char *)(&(((unsigned char*)a_frame)[a_length])),dataExpected);
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  if (FileStream.fail()){
+	    return errorFileFail;
+	  }
+	  rxStatus = dataExpected;
+	  error = errorNoError;
+	}else{
+	  rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)a_frame)[a_length])), dataExpected, tcpDataTimeout);
+	  error = ClientTCPRead_ErrorCheck(rxStatus);
+	}
 	if (error != errorNoError) break;
 	a_length += rxStatus; 
 	dataExpected -= rxStatus;
@@ -387,8 +431,23 @@ namespace TrolleyInterface{
     // 
     do
     {
-      rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
-      error = ClientTCPRead_ErrorCheck(rxStatus);
+      if (ReadFromFile){
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
+	FileStream.read((char *)(&(((unsigned char*)b_frame)[b_length])),dataExpected);
+	if (FileStream.eof()){
+	  return errorEOF;
+	}
+	if (FileStream.fail()){
+	  return errorFileFail;
+	}
+	rxStatus = dataExpected;
+	error = errorNoError;
+      }else{
+	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
+	error = ClientTCPRead_ErrorCheck(rxStatus);
+      }
       if (error != errorNoError) break;
       b_length += rxStatus; 
       dataExpected -= rxStatus;
@@ -401,8 +460,23 @@ namespace TrolleyInterface{
       //
       do
       {
-	rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
-	error = ClientTCPRead_ErrorCheck(rxStatus);
+	if (ReadFromFile){
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  FileStream.read((char *)(&(((unsigned char*)b_frame)[b_length])),dataExpected);
+	  if (FileStream.eof()){
+	    return errorEOF;
+	  }
+	  if (FileStream.fail()){
+	    return errorFileFail;
+	  }
+	  rxStatus = dataExpected;
+	  error = errorNoError;
+	}else{
+	  rxStatus = ClientTCPRead(tcpDataHandle, (void*)(&(((unsigned char*)b_frame)[b_length])), dataExpected, tcpDataTimeout);
+	  error = ClientTCPRead_ErrorCheck(rxStatus);
+	}
 	if (error != errorNoError) break;
 	b_length += rxStatus; 
 	dataExpected -= rxStatus;
