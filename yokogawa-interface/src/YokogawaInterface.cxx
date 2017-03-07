@@ -183,20 +183,11 @@ namespace yokogawa_interface {
    } 
    //___________________________________________________________________________
    char *ask(const char *cmd){
-      int rc = write(cmd); 
-      int bytes_rec=0;
       const int SIZE = 100; 
       strcpy(REC_BUF,"");   // clear the receive buffer   
-      if(rc!=0){
-	 // error!
-	 sprintf(REC_BUF,"ERROR, can't send query: %s \n",cmd);  
-      }else{
-	 bytes_rec = vxi11_receive(clink,REC_BUF,SIZE);
-         if(bytes_rec<=0){
-	    sprintf(REC_BUF,"ERROR, can't read result of query: %s \n",cmd);  
-         }
-      }
-      return REC_BUF;  
+      int rc = vxi11_send_and_receive(clink,cmd,REC_BUF,SIZE,100);  // last argument is a timeout 
+      if(rc!=0) strcpy(REC_BUF,"NO RESPONSE");                      // comms failed    
+      return REC_BUF;
    }
    //___________________________________________________________________________
    int open_connection(const char *ip_addr){
