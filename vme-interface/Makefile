@@ -70,7 +70,7 @@ lib/$(LIBNAME): $(OBJECTS) $(OBJ_VME)
 install:
 	mkdir -p $(LIBDIR)
 	install lib/* $(LIBDIR)
-	ln -s $(LIBDIR)/$(LIBNAME) $(LIBDIR)/$(SONAME)
+	ln -sf $(LIBDIR)/$(LIBNAME) $(LIBDIR)/$(SONAME)
 
 	mkdir -p $(INCDIR) $(INCDIR)/vme
 	install include/*.hh $(INCDIR)
