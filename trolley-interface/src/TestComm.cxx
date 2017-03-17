@@ -65,7 +65,7 @@ int main(int argc,char **argv){
     NBarcodes = atoi(argv[2]);
   }
 
-/* 
+
   int err = DeviceConnect("192.168.1.123");
   if (err<0)return -1;
   cout <<"connection good"<<endl;
@@ -77,16 +77,16 @@ int main(int argc,char **argv){
   cout <<err<<" "<<LEDV<< " "<<LEDDisable<<endl;
   DevicePurgeData();
   DeviceWriteMask(0x40000944,0x00000001,0x00000000);
-*/
+
   //Receive Data
   char buffer[1000];
 //  err = DataReceive(buffer);
 //  cout <<err<<endl;
 
   //Connect to file
-  const char * filename = "/home/newg2/Applications/field-daq/resources/NMRDataTemp/data_NMR_61682000Hz_11.70dbm-2016-10-27_19-36-42.dat"; 
+/*  const char * filename = "/home/newg2/Applications/field-daq/resources/NMRDataTemp/data-2017-02-28_20-08-11.dat"; 
   int err = FileOpen(filename);
-
+*/
   //cout <<err<<endl;
   //Try to get some data
 
@@ -95,9 +95,12 @@ int main(int argc,char **argv){
   int FrameSize = 0;
   //Frame buffer
   unsigned short* Frame = new unsigned short[MAX_PAYLOAD_DATA/sizeof(unsigned short)];
+  unsigned short* FrameB = new unsigned short[MAX_PAYLOAD_DATA/sizeof(unsigned short)];
+  unsigned int sizeA;
+  unsigned int sizeB;
 
   //Read first frame and sync
-  int rc = DataReceive((void *)Frame);
+  int rc = DataReceive((void *)Frame, (void *)FrameB, &sizeA, &sizeB);
   if (rc<0){
     cout <<"Data Error code "<<rc<<endl;
     return -1;
@@ -129,11 +132,13 @@ int main(int argc,char **argv){
   if (NBarcodes>NCycle)NCycle = NBarcodes;
   while (i<NCycle){
     //Read Frame
-    rc = DataReceive((void *)Frame);
+    rc = DataReceive((void *)Frame, (void *)FrameB, &sizeA, &sizeB);
+    cout <<sizeA<<" "<<sizeB<<endl;
     if (rc<0){
       cout <<"Data Error code "<<rc<<endl;
       return -1;
     }
+    continue;
  //   cout << i<<" "<<NCycle<<endl;
   //  FrameNumber = *((int *)(&(Frame[9])));
     memcpy(&FrameNumber,&(Frame[9]),sizeof(int));
@@ -244,7 +249,7 @@ int main(int argc,char **argv){
   f.Close();
   //Test file operations
   while(1){
-    int rc = DataReceive((void *)Frame);
+    int rc = DataReceive((void *)Frame, (void *)FrameB, &sizeA, &sizeB);
     if (rc<0){
       cout <<"Data Error code "<<rc<<endl;
       return -1;
@@ -252,12 +257,13 @@ int main(int argc,char **argv){
   }
 
   //Disconnect
-/*  DeviceWriteMask(0x40000944,0x00000001,0x00000000);
+  DeviceWriteMask(0x40000944,0x00000001,0x00000001);
   err = DeviceDisconnect();
-*/
-  FileClose();
+
+ // FileClose();
   //cout <<err<<endl;
   delete []Frame;
+  delete []FrameB;
   for (int j=0;j<NPulses;j++){
     delete gArray[j];
   }

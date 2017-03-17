@@ -11,7 +11,7 @@ LOGDIR=$(PREFIX)/var/log/g2field
 
 # Library info.
 MAJOR=0
-MINOR=0.1
+MINOR=1.0
 SONAME=libg2fieldvme.so
 ARNAME=libg2fieldvme.a
 LIBNAME=$(SONAME).$(MAJOR).$(MINOR)
@@ -42,7 +42,7 @@ ifeq ($(shell uname -s), Darwin)
 	LIBFLAGS = -shared -Wl,-install_name,$(SONAME).$(MAJOR) 
 else
 	LIBFLAGS = -shared -Wl,-soname,$(SONAME).$(MAJOR) 
-	LDCONFIG = ldconfig
+	LDCONFIG = ldconfig -n $(LIBDIR)
 endif
 
 all: $(OBJECTS) $(OBJ_VME) $(TARGETS) lib/$(ARNAME) lib/$(LIBNAME)
@@ -70,6 +70,7 @@ lib/$(LIBNAME): $(OBJECTS) $(OBJ_VME)
 install:
 	mkdir -p $(LIBDIR)
 	install lib/* $(LIBDIR)
+	ln -sf $(LIBDIR)/$(LIBNAME) $(LIBDIR)/$(SONAME)
 
 	mkdir -p $(INCDIR) $(INCDIR)/vme
 	install include/*.hh $(INCDIR)
@@ -86,4 +87,4 @@ uninstall:
 	rm -rf $(INCDIR) $(LOGDIR) $(CONFDIR)
 
 clean:
-	rm -f $(TARGETS) $(OBJECTS) $(OBJ_VME)
+	rm -f $(TARGETS) build/*.o lib/lib*

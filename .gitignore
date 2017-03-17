@@ -28,5 +28,9 @@
 *.out
 *.app
 
+# Backups
+*~
+*#*
+
 includes/*
 TrolleyInterface/bin/*
