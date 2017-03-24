@@ -3,7 +3,7 @@
 namespace hw {
 
 Caen1742::Caen1742(std::string name, std::string conf, int trace_len) :
-  CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 34, trace_len)
+  CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 36, trace_len)
 {
   conf_file_ = conf;
   
@@ -31,6 +31,7 @@ void Caen1742::LoadConfig()
   drs_cell_corrections_ = conf.get<bool>("drs_cell_corrections", true);
   drs_peak_corrections_ = conf.get<bool>("drs_peak_corrections", true);
   drs_time_corrections_ = conf.get<bool>("drs_time_corrections", true);
+  corrections_from_disk_ = conf.get<bool>("corrections_from_disk", true);
 
   // Get the base address for the device.  Convert from hex.
   tmp = conf.get<std::string>("base_address");
@@ -389,12 +390,12 @@ void Caen1742::WorkLoop()
       } else {
 	
 	std::this_thread::yield();
-	usleep(hw::short_sleep);
+	hw::light_sleep();
       }
     }
 
     std::this_thread::yield();
-    usleep(hw::long_sleep);
+    hw::heavy_sleep();
   }
 
   // Stop acquiring events.
@@ -505,7 +506,7 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
   char *evtptr = nullptr;
   uint msg, d, size;
   int sample;
-  std::vector<uint> startcells(4, 0);
+  std::vector<uint> startcells(kNumAdcGroups, 0);
 
   static std::vector<uint> buffer;
   buffer.reserve(0x10000);
@@ -516,14 +517,14 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
   auto dtn = t1.time_since_epoch() - t0_.time_since_epoch();
   bundle.sys_clock = duration_cast<milliseconds>(dtn).count();  
 
-  /*
   // Get the size of the next event data
   rc = Read(0x814c, msg);
   if (rc != 0) {
-  LogError("failed to attain size of next event");
-  return;
+    LogError("failed to attain size of next event");
+    return;
+  } else {
+    LogDebug("begin readout of event length: %i", msg);
   }
-  */
   
   /*
   //works OK at about 20 Hz  
@@ -534,7 +535,6 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
   */
   
   read_len_ = buffer.capacity();
-  LogDebug("begin readout of event length: %i", msg);
   rc = ReadTraceMblt64SameBlock(0x0, &buffer[0]);
 
   //rc > 0: number of words read
@@ -706,16 +706,17 @@ int Caen1742::CellCorrection(wfd_data_t &data,
   LogDebug("running cell correction");
 
   uint i, j, k;
-  short startcell;
+  uint startcell;
   uint nchannels = kNumAdcChannels / kNumAdcGroups;
   
   for (i = 0; i < kNumAdcChannels; ++i) {
-
+    
     startcell = startcells[i / nchannels];
 
     for (j = 0; j < kNumAdcSamples; ++j) {
       
-      data.trace[i][j] -= correction_table_.cell[i][(startcell + j) % 1024];
+      k = (startcell + j) % kNumAdcSamples;     
+      data.trace[i][j] -= correction_table_.cell[i][k];
       data.trace[i][j] -= correction_table_.nsample[i][j];
     }
   }
@@ -1014,7 +1015,7 @@ int Caen1742::GetChannelCorrectionData(uint ch)
   // Read the time correction if it's the first channel in the group.
   if (ch % (kNumAdcChannels / kNumAdcGroups) == 0) {
     
-    LogDebug("loading time corrections for gr %i", ch % (kNumAdcSamples / kNumAdcGroups));
+    LogDebug("loading time corrections for gr %i", ch % (kNumAdcChannels / kNumAdcGroups));
     pagenum &= 0xf00;
     pagenum |= 0xa0;
 
@@ -1150,20 +1151,41 @@ int Caen1742::ReadFlashPage(uint32_t group,
 // might merge with GetChannelCorrectionData.
 int Caen1742::GetCorrectionData()
 {
+  // Check if a file is already written.
+  struct stat buffer;
+  std::string s("/usr/local/etc/g2/");
+  s += name_ + std::string("_corr_data.csv");
+  if (stat(s.c_str(), &buffer) == 0) {
+
+    LoadCorrectionDataCsv(s);
+    return 0;
+  }
+
+  LogDebug("loading correction data from device");
+
+  // If no file exists, load from the device.  
   for (uint ch = 0; ch < kNumAdcChannels; ++ch) {
     GetChannelCorrectionData(ch);
   }
+
+  return 0;
 }
 
 
 int Caen1742::WriteCorrectionDataCsv()
 {
+  LogDebug("saving correction data to disk");
+
   // Make sure we have the correction loaded.
   GetCorrectionData();
 
-  // unfinished, just printing for now
+  // Set the filename
+  std::string s("/usr/local/etc/g2/");
+  s += name_ + std::string("_corr_data.csv");
+
+  // Open the file.
   std::ofstream out;
-  out.open("correction_correction_table_.csv");
+  out.open(s);
   
   for (int i = -1; i < 1024; ++i) {
 
@@ -1180,7 +1202,7 @@ int Caen1742::WriteCorrectionDataCsv()
 	
       }
 
-      out << ", ";
+      out << " ";
 
     } // cell
 
@@ -1197,7 +1219,7 @@ int Caen1742::WriteCorrectionDataCsv()
 	
       }
 
-      out << ", ";
+      out << " ";
 
     } // nsample
 
@@ -1216,7 +1238,7 @@ int Caen1742::WriteCorrectionDataCsv()
 
       if (j != kNumAdcGroups - 1) {
 
-	out << ", ";
+	out << " ";
 
       } else {
 	
@@ -1225,6 +1247,45 @@ int Caen1742::WriteCorrectionDataCsv()
       }
     } // time
   } // i
+}
+
+int Caen1742::LoadCorrectionDataCsv(std::string fn)
+{
+  LogDebug("Loading correction file from disk");
+
+  // Open the file.
+  std::fstream in;
+  in.open(fn);
+
+  std::string line;
+  std::getline(in, line);
+
+  int i = 0; 
+
+  while (in.good()) {
+  
+    // Cell corrections
+    for (int j = 0; j < kNumAdcChannels; ++j) {
+      
+      in >> correction_table_.cell[j][i];
+      
+    } // cell
+    
+    // nsample corrections
+    for (int j = 0; j < kNumAdcChannels; ++j) {
+      
+      in >> correction_table_.nsample[j][i];
+
+    } // nsample
+
+    // timing corrections
+    for (int j = 0; j < kNumAdcGroups; ++j) {
+      
+      in >> correction_table_.time[j][i];
+
+    } // time
+
+  } // stream
 }
 
 
