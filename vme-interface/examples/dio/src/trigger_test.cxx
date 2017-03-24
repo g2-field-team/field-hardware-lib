@@ -27,11 +27,11 @@ int main(int argc, char* argv[])
 
   // Create a Acromag IO object in carrier board position A.
   std::string conf_file("config/fe_vme_shimming.json");
-  DioTriggerBoard trigger(0x0, BOARD_B, 3, false);
+  DioTriggerBoard trigger(0x0, BOARD_B, 0, false);
 
   double pulse_width = 1000.0; // us
   double rate = 2.0; // Hz
-  int trigger_mask = 63;
+  int trigger_mask = 0x1;
 
   if (argc > 1) {
     rate = atof(argv[1]);
