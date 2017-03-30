@@ -1,0 +1,14 @@
+{
+    "base_address": "0x60000000",
+    "user_led_on": false,
+    "enable_ext_lemo": true,
+    "invert_ext_lemo": false,
+    "enable_int_stop": true,
+    "enable_event_length_stop": true,
+    "pretrigger_samples": "0xfff",
+    "start_delay": "0",
+    "stop_delay": "0",
+    "enable_ext_clk": true,
+    "int_clk_setting_MHz": 40,
+    "logfile": "output/sis3302_0.log"
+}
