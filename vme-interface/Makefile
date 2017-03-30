@@ -17,7 +17,7 @@ ARNAME=libg2fieldvme.a
 LIBNAME=$(SONAME).$(MAJOR).$(MINOR)
 
 # Add a few flags to all compiler calls.
-CXX += -O3 -fPIC
+CXX += -O3 -fPIC -std=c++11
 CC += -O3 -fPIC
 
 ifdef DEBUG
