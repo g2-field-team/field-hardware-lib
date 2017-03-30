@@ -89,9 +89,6 @@ namespace TrolleyInterface{
     //error = ConnectToTCPServer(&tcpControlHandle2, ControlPort1, DeviceIP, tcpControlCallbackFunction, NULL, tcpControlTimeout);
     // if (error) return errorCommConnect;
 
-    //Purge data before connect
-    DevicePurgeData();
-
     // Open the event data connection.
     error = ConnectToTCPServer(&tcpDataHandle, DataPort, DeviceIP, tcpDataCallbackFunction, NULL, tcpDataTimeout);
     if (error) return errorCommConnect;
@@ -113,6 +110,10 @@ namespace TrolleyInterface{
 
     // Set the event data interface to Ethernet
     DeviceWrite(trolleyReg.eventDataInterfaceSelect, 0x00000001);
+
+    //Purge data before connect
+    DevicePurgeData();
+
     return errorNoError;
   }
 

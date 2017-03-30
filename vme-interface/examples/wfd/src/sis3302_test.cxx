@@ -9,12 +9,12 @@ int main(int argc, char *argv[])
   int num_ch = 8;
   int num_read_attempts = 10;
   std::string wfd_name("Test WFD");
-  std::string wfd_conf("config/sis3302_0.json");
+  std::string wfd_conf("config/sis3302_sample.json");
 
   // Trigger variables
   auto trg_card(hw::BOARD_B);
-  int trg_port = 0;
-  int trg_mask = 3;
+  int trg_port = 0x0;
+  int trg_mask = 0x1;
 
   // Output
   std::string outfile("output/sis3302_test_data.csv");
@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
 
   if (data.trace.size() == 0) {
     std::cout << "No data to read out from WFD." << std::endl;
+    return 1;
   }
 
   // Save the waveforms.

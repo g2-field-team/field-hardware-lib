@@ -51,11 +51,11 @@ const int long_sleep = 100;
 const double sample_period = 0.0001; // in milliseconds
 
 inline void light_sleep() {
- usleep(200); // in usec
+  usleep(200); // in usec
 }
 
 inline void heavy_sleep() {
-usleep(10000); // in usec
+  usleep(10000); // in usec
 }
 
 inline long long systime_us() {

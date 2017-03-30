@@ -430,7 +430,7 @@ void Sis3302::GetEvent(wfd_data_t &bundle)
     do {
 
       bundle.trace[ch].resize(trace_len_);
-      rc = ReadTrace(offset, (uint *)&bundle.trace[ch][0]);
+      rc = ReadTraceMblt64(offset, (uint *)&bundle.trace[ch][0]);
       if (rc != 0) {
         LogError("failed reading trace for channel %i", ch);
       }
