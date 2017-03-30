@@ -37,10 +37,10 @@ class DioTriggerBoard
   void SetTriggerPort(int trg_port) { trg_port_ = trg_port; };
 
   // Fire TTL pulse
-  void FireTrigger(int trg_bit=0, int length_us=10);
+  void FireTrigger(int trg_bit=0, int length_us=0);
 
   // Fire TTL pulses
-  void FireTriggers(int trg_mask=0, int length_us=10);
+  void FireTriggers(int trg_mask=0, int length_us=0);
 
  private:
 

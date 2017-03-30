@@ -35,7 +35,10 @@ void DioTriggerBoard::FireTriggers(int trg_mask, int length_us)
   data &= ~trg_mask;
 
   io_board_.WritePort(trg_port_, data);
-  usleep(length_us);
+  
+  if (length_us > 0) {
+    usleep(length_us); 
+  }
 
   // Now turn the trigger bit back off.
   io_board_.ReadPort(trg_port_, data);
