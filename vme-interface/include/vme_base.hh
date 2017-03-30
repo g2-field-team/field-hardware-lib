@@ -56,7 +56,8 @@ public:
 
 protected:
 
-  const int max_read_attempts_ = 1000;
+  const int max_read_attempts_ = 100;
+  const int wait_time_us_ = 50;
 
   int device_;
   int read_len_;
@@ -95,7 +96,7 @@ int VmeBase::Read(uint addr, uint &msg)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all
@@ -137,7 +138,7 @@ int VmeBase::Write(uint addr, uint msg)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -179,7 +180,7 @@ int VmeBase::Read16(uint addr, ushort &msg)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -220,7 +221,7 @@ int VmeBase::Write16(uint addr, ushort msg)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -264,7 +265,7 @@ int VmeBase::ReadTrace(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -305,7 +306,7 @@ int VmeBase::ReadTrace(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -347,7 +348,7 @@ int VmeBase::ReadTraceFifo(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -385,7 +386,7 @@ int VmeBase::ReadTraceFifo(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -433,7 +434,7 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -472,7 +473,7 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -521,7 +522,7 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -584,7 +585,7 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -657,7 +658,7 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -695,7 +696,7 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -742,7 +743,7 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
@@ -781,7 +782,7 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace, int trace_len)
   count = 0;
   do {
     device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(10);
+    usleep(wait_time_us_);
   } while ((device_ < 0) && (count++ < max_read_attempts_));
 
   // Log an error if we couldn't open it at all.
