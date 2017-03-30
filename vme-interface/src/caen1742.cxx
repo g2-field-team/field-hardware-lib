@@ -1249,45 +1249,6 @@ int Caen1742::WriteCorrectionDataCsv()
   } // i
 }
 
-int Caen1742::LoadCorrectionDataCsv(std::string fn)
-{
-  LogDebug("Loading correction file from disk");
-
-  // Open the file.
-  std::fstream in;
-  in.open(fn);
-
-  std::string line;
-  std::getline(in, line);
-
-  int i = 0; 
-
-  while (in.good()) {
-  
-    // Cell corrections
-    for (int j = 0; j < kNumAdcChannels; ++j) {
-      
-      in >> correction_table_.cell[j][i];
-      
-    } // cell
-    
-    // nsample corrections
-    for (int j = 0; j < kNumAdcChannels; ++j) {
-      
-      in >> correction_table_.nsample[j][i];
-
-    } // nsample
-
-    // timing corrections
-    for (int j = 0; j < kNumAdcGroups; ++j) {
-      
-      in >> correction_table_.time[j][i];
-
-    } // time
-
-  } // stream
-}
-
 
 int Caen1742::LoadCorrectionDataCsv(std::string fn)
 {
