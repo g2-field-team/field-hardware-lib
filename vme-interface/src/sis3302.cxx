@@ -12,6 +12,8 @@ Sis3302::Sis3302(std::string name, std::string conf, int trace_len) :
   LogMessage("worker created");
 
   read_len_ = trace_len / 2;
+  has_event_ = false;
+  generate_software_trigger_ = false;
 
   StartThread();
   StartWorker();
@@ -270,6 +272,10 @@ void Sis3302::WorkLoop()
 
     while (go_time_) {
 
+      if (generate_software_trigger_) {
+        GenerateTrigger();
+      }
+
       if (EventAvailable()) {
 
         static wfd_data_t bundle;
@@ -441,6 +447,17 @@ void Sis3302::GetEvent(wfd_data_t &bundle)
   //   	      (ushort *)trace[ch] + trace_len_,
   //   	      bundle.trace[ch]);
   // }
+}
+
+
+void Sis3302::GenerateTrigger() 
+{
+  int rc = Write(KEY_START, 0x1);
+  if (rc != 0) {
+    LogError("failed to generate internal trigger");
+  }
+
+  generate_software_trigger_ = false;
 }
 
 } // ::hw

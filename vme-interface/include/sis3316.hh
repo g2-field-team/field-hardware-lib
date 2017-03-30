@@ -61,6 +61,16 @@ class Sis3316 : public VmeBase, public WfdBase {
   // Returns the oldest event on the data queue.
   wfd_data_t PopEvent();
 
+  // Generate an internal trigger.
+  inline void SoftwareTrigger() {
+    generate_software_trigger_ = true;
+  }
+      
+  void PrintStatus();
+  void PrintControlStatus();
+  void PrintNimInputStatus();
+  void PrintAcquisitionStatus();
+
  private:
 
   // Register constants which are substrings of those given by Struck.
@@ -74,6 +84,7 @@ class Sis3316 : public VmeBase, public WfdBase {
   const static uint NIM_INPUT_CONTROL = 0x5c;
   const static uint ACQUISITION_CONTROL = 0x60;
   const static uint LEMO_OUT_CO_SELECT = 0x70;
+  const static uint LEMO_OUT_TO_SELECT = 0x74;
   const static uint DATA_TRANSFER_ADC1_4_CTRL = 0x80;
   const static uint DATA_TRANSFER_ADC1_4_STATUS = 0x90;
 
@@ -115,6 +126,7 @@ class Sis3316 : public VmeBase, public WfdBase {
   // Variables
   std::chrono::high_resolution_clock::time_point t0_;
   std::atomic<bool> bank2_armed_flag;
+  std::atomic<bool> generate_software_trigger_;
   std::string conf_file_;
 
   // Checks the device for a triggered event.
@@ -122,6 +134,9 @@ class Sis3316 : public VmeBase, public WfdBase {
 
   // Reads the data from the device with vme calls.
   void GetEvent(wfd_data_t &bundle);
+
+  // Write the vme key register to generate an internal trigger.
+  void GenerateTrigger();
 
   // Auxilliary control utilities defined below:
   // internal oscillator via I2C, see SI570 manual
