@@ -6,10 +6,10 @@ int main(int argc, char *argv[])
 {
   // WFD variables.
   int trace_len = 100000;
-  int num_ch = 16;
+  int num_ch = 8;
   int num_read_attempts = 10;
   std::string wfd_name("Test WFD");
-  std::string wfd_conf("/usr/local/etc/g2field/sis3302_sample.json");
+  std::string wfd_conf("config/sis3302_0.json");
 
   // Trigger variables
   auto trg_card(hw::BOARD_B);
