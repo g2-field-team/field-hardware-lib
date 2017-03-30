@@ -105,9 +105,9 @@ private:
   std::chrono::high_resolution_clock::time_point t0_;
 
   typedef struct {
-    int16_t cell[16][1024];
-    int8_t  nsample[16][1024];
-    float   time[2][1024];
+    int16_t cell[kNumAdcChannels][kNumAdcSamples];
+    int8_t  nsample[kNumAdcChannels][kNumAdcSamples];
+    float   time[kNumAdcGroups][kNumAdcSamples];
   } drs_correction;
 
   drs_correction correction_table_;
@@ -151,6 +151,8 @@ private:
 
   // Optionally write out the correction data as a csv to observe.
   int WriteCorrectionDataCsv();
+
+  int LoadCorrectionDataCsv(std::string fn);
 };
 
 } // ::daq

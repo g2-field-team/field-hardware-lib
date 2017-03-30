@@ -3,7 +3,7 @@
 namespace hw {
 
 Caen1742::Caen1742(std::string name, std::string conf, int trace_len) :
-  CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 34, trace_len)
+  CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 36, trace_len)
 {
   conf_file_ = conf;
   
@@ -1150,21 +1150,42 @@ int Caen1742::ReadFlashPage(uint32_t group,
 // might merge with GetChannelCorrectionData.
 int Caen1742::GetCorrectionData()
 {
+  // Check if a file is already written.
+  struct stat buffer;
+  std::string s("/usr/local/etc/g2/");
+  s += name_ + std::string("_corr_data.csv");
+  if (stat(s.c_str(), &buffer) == 0) {
+
+    LoadCorrectionDataCsv(s);
+    return 0;
+  }
+
+  LogDebug("loading correction data from device");
+
+  // If no file exists, load from the device.  
   for (uint ch = 0; ch < kNumAdcChannels; ++ch) {
     GetChannelCorrectionData(ch);
   }
+
+  return 0;
 }
 
 
 int Caen1742::WriteCorrectionDataCsv()
 {
+  LogDebug("saving correction data to disk");
+
   // Make sure we have the correction loaded.
   GetCorrectionData();
 
-  // unfinished, just printing for now
+  // Set the filename
+  std::string s("/usr/local/etc/g2/");
+  s += name_ + std::string("_corr_data.csv");
+
+  // Open the file.
   std::ofstream out;
-  out.open("correction_correction_table_.csv");
-  
+  out.open(s);  
+
   for (int i = -1; i < 1024; ++i) {
 
     // Cell corrections
@@ -1227,6 +1248,45 @@ int Caen1742::WriteCorrectionDataCsv()
   } // i
 }
 
+
+int Caen1742::LoadCorrectionDataCsv(std::string fn)
+{
+  LogDebug("Loading correction file from disk");
+
+  // Open the file.
+  std::fstream in;
+  in.open(fn);
+
+  std::string line;
+  std::getline(in, line);
+
+  int i = 0; 
+
+  while (in.good()) {
+  
+    // Cell corrections
+    for (int j = 0; j < kNumAdcChannels; ++j) {
+      
+      in >> correction_table_.cell[j][i];
+      
+    } // cell
+    
+    // nsample corrections
+    for (int j = 0; j < kNumAdcChannels; ++j) {
+      
+      in >> correction_table_.nsample[j][i];
+
+    } // nsample
+
+    // timing corrections
+    for (int j = 0; j < kNumAdcGroups; ++j) {
+      
+      in >> correction_table_.time[j][i];
+
+    } // time
+
+  } // stream
+}
 
 void Caen1742::WaitForSpi(int group_index) {
   // check spi busy flag
