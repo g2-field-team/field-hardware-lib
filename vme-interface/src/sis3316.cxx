@@ -13,9 +13,12 @@ Sis3316::Sis3316(std::string name, std::string conf, int trace_len) :
   read_len_ = 3 + trace_len_ / 2; // only for vme ReadTrace
   read_len_ += (read_len_ % 2); // needs to be even
   bank2_armed_flag = false;
+  generate_software_trigger_ = false;
 
   StartThread();
   StartWorker();
+
+  LogMessage("initialization finished");
 }
 
 void Sis3316::LoadConfig()
@@ -335,7 +338,7 @@ void Sis3316::LoadConfig()
       ++nerrors;
     }
   }
-  usleep(100);
+  usleep(1000);
 
   for (gr = 0; gr < kNumChannelGroups; ++gr) {
 
@@ -393,7 +396,7 @@ void Sis3316::LoadConfig()
 	LogError("failed to enable the internal reference for ADC %i", gr + 1);
         ++nerrors;
       }
-      usleep(1000);  // update takes time
+      usleep(10000);  // update takes time
 
       string dac_offset_hex = conf.get<string>("dac_voltage_offset", "0x8000");
       uint offset = std::stoi(dac_offset_hex, nullptr, 0);
@@ -423,7 +426,7 @@ void Sis3316::LoadConfig()
 	LogError("failure to load offset for DAC %i", gr + 1);
         ++nerrors;
       }
-      usleep(1000);
+      usleep(10000);
     }
   }
 
@@ -583,7 +586,14 @@ void Sis3316::LoadConfig()
   // Enable clock output
   rc = Write(LEMO_OUT_CO_SELECT, 0x1);
   if (rc != 0) {
-    LogError("failure to enable CO clock out");
+    LogError("failure to enable CO (clock out)");
+    ++nerrors;
+  }
+
+  // Enable trigger output
+  rc = Write(LEMO_OUT_TO_SELECT, 0x1 << 25);
+  if (rc != 0) {
+    LogError("failure to enable TO (trigger out)");
     ++nerrors;
   }
 
@@ -609,6 +619,7 @@ void Sis3316::LoadConfig()
   }
 } // LoadConfig
 
+
 void Sis3316::WorkLoop()
 {
   t0_ = std::chrono::high_resolution_clock::now();
@@ -616,6 +627,10 @@ void Sis3316::WorkLoop()
   while (thread_live_) {
 
     while (go_time_) {
+
+      if (generate_software_trigger_) {
+        GenerateTrigger();
+      }
 
       if (EventAvailable()) {
 
@@ -629,8 +644,8 @@ void Sis3316::WorkLoop()
 
       } else {
 
-	std::this_thread::yield();
-	usleep(hw::short_sleep);
+        std::this_thread::yield();
+        usleep(hw::short_sleep);
       }
     }
 
@@ -689,16 +704,16 @@ bool Sis3316::EventAvailable()
     if (bank2_armed_flag) {
 
       do {
-	rc = Write(KEY_DISARM_AND_ARM_BANK1, 1);
-	bank2_armed_flag = false;
+        rc = Write(KEY_DISARM_AND_ARM_BANK1, 1);
+        bank2_armed_flag = false;
 
       } while ((rc != 0) && (count++ < kMaxPoll));
 
     } else {
 
       do {
-	rc = Write(KEY_DISARM_AND_ARM_BANK2, 1);
-	bank2_armed_flag = true;
+        rc = Write(KEY_DISARM_AND_ARM_BANK2, 1);
+        bank2_armed_flag = true;
 
       } while ((rc != 0) && (count++ < kMaxPoll));
 
@@ -719,6 +734,7 @@ bool Sis3316::EventAvailable()
 
 void Sis3316::GetEvent(wfd_data_t &bundle)
 {
+  LogMessage("Reading out event");
   using namespace std::chrono;
   int ch, rc, count = 0;
   uint trace_addr, addr, offset, msg;
@@ -776,7 +792,7 @@ void Sis3316::GetEvent(wfd_data_t &bundle)
     // Specify the channel's fifo address
     msg = 0x80000000; // Start transfer bit
     if (!bank2_armed_flag) msg += 0x01000000; // Bank 2 offset
-    if ((ch & 0x1) == 0x1) msg += 0x02000000; // ch 2, 4, 6, ...
+    if ((ch & 0x1) == 0x0) msg += 0x02000000; // ch 2, 4, 6, ...
     if ((ch & 0x2) == 0x2) msg += 0x10000000; // ch 2, 3, 6, 7, ...
 
     // Start readout FSM
@@ -797,7 +813,9 @@ void Sis3316::GetEvent(wfd_data_t &bundle)
 
     do {
       data.resize(read_len_);
-      rc = ReadTraceFifo(trace_addr, (uint *)&data[0]);
+      LogMessage("bench: start ReadTrace");
+      rc = ReadTrace(trace_addr, (uint *)&data[0]);
+      LogMessage("bench: finish ReadTrace");
 
       if (rc != 0) {
         LogError("failed to read trace for channel %i", ch);
@@ -833,6 +851,57 @@ void Sis3316::GetEvent(wfd_data_t &bundle)
   t1 = high_resolution_clock::now();
   dtn = t1.time_since_epoch() - t0_.time_since_epoch();
   LogDebug("GetEvent finished");
+}
+
+
+void Sis3316::GenerateTrigger() 
+{
+  int rc = Write(KEY_TRIGGER, 0x1);
+  if (rc != 0) {
+    LogError("failed to generate internal trigger");
+  }
+
+  generate_software_trigger_ = false;
+}
+
+
+void Sis3316::PrintControlStatus()
+{
+  uint msg;
+  int rc = Read(CONTROL_STATUS, msg);
+
+  printf("Control Status: 0x%02x-%02x-%02x-%02x\n",
+         (msg >> 24) & 0xff ,(msg >> 16) & 0xff,
+         (msg >> 8) & 0xff, (msg >> 0) & 0xFF);  
+}
+
+void Sis3316::PrintNimInputStatus()
+{
+  uint msg;
+  int rc = Read(NIM_INPUT_CONTROL, msg);
+
+  printf("NIM Input Status: 0x%02x-%02x-%02x-%02x\n",
+         (msg >> 24) & 0xff ,(msg >> 16) & 0xff,
+         (msg >> 8) & 0xff, (msg >> 0) & 0xFF);  
+}
+
+void Sis3316::PrintAcquisitionStatus()
+{
+  uint msg;
+  int rc = Read(ACQUISITION_CONTROL, msg);
+
+  printf("Acqusition Status: 0x%02x-%02x-%02x-%02x\n",
+         (msg >> 24) & 0xff ,(msg >> 16) & 0xff,
+         (msg >> 8) & 0xff, (msg >> 0) & 0xFF);  
+}
+
+
+void Sis3316::PrintStatus()
+{
+  //  PrintControlStatus();
+  PrintNimInputStatus();
+  PrintAcquisitionStatus();
+  printf("\n");
 }
 
 int Sis3316::I2cStart(int osc)
@@ -982,6 +1051,49 @@ int Sis3316::SetOscFreqHSN1(int osc, unsigned char hs, unsigned char n1)
   unsigned char ack;
   unsigned char freq_high_speed_rd[6];
   unsigned char freq_high_speed_wr[6];
+
+  // Manipulate the input bits to conform to the clock bits.
+  switch (hs) 
+    {
+    case (4) :
+      hs = 0;
+      break;
+
+    case (5) :
+      hs = 1;
+      break;
+
+    case (6) :
+      hs = 2;
+      break;
+
+    case (7) :
+      hs = 3;
+      break;
+
+    case (9) :
+      hs = 3;
+      break;
+
+    case (11) :
+      hs = 3;
+      break;
+
+    default :
+      LogWarning("invalid n1 clock divider, setting to 4");
+      hs = 0;
+      break;
+    }
+
+  if (n1 < 1) {
+    LogWarning("invalid n1 clock divider, setting to 1");
+    n1 = 0;
+  } else if (n1 > 127) {
+    LogWarning("invalid n1 clock divider, setting to 127");
+    n1 = 127 - 1;
+  } else {
+    n1 -= 1;
+  }
 
   // Start.
   rc = I2cStart(osc);
