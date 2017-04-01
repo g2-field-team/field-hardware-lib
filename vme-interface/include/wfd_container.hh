@@ -68,6 +68,9 @@ class WfdContainer : public CommonBase {
   // Checks if any workers have more than a single event.
   bool AnyWorkersHaveMultiEvent();
 
+  // Trigger the WFDs via software.
+  void GenerateTrigger();
+
   // Copies event data into bundle.
   void GetEventData(event_data_t &bundle);
 
