@@ -93,7 +93,7 @@ bool WfdContainer::AnyWorkersHaveMultiEvent()
   return false;
 }
 
-void WfdContainer::GenerateTrigger()
+void WfdContainer::GenerateTriggers()
 {
   // Launches the data worker threads.
   LogMessage("Issuing software trigger to workers");
