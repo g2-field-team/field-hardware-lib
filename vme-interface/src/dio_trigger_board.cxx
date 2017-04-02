@@ -31,6 +31,10 @@ void DioTriggerBoard::FireTriggers(int trg_mask, int length_us)
   // Get the current state and only flip the trigger bit.
   u_int8_t data;
 
+  if (trg_mask == 0) {
+    trg_mask = trg_mask_;
+  }
+
   // Start the trigger and wait the allotted pulse time.
   io_board_.ReadPort(trg_port_, data);
   data &= ~trg_mask;
