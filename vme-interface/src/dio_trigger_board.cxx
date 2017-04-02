@@ -6,7 +6,8 @@ DioTriggerBoard::DioTriggerBoard(int board_addr,
                                  board_id bid,
                                  int trg_port,
                                  bool use_sextets) :
-  io_board_(board_addr, bid, use_sextets), trg_port_(trg_port) {}
+  io_board_(board_addr, bid, use_sextets), 
+  trg_port_(trg_port), trg_mask_(0xff) {}
 
 void DioTriggerBoard::FireTrigger(int trg_bit, int length_us)
 {
