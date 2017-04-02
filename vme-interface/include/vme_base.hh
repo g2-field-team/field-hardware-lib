@@ -57,7 +57,7 @@ public:
 protected:
 
   const int max_read_attempts_ = 100;
-  const int wait_time_us_ = 50;
+  const int wait_time_us_ = 1000;
 
   int device_;
   int read_len_;
