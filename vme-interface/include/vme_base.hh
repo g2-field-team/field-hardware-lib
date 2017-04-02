@@ -5,7 +5,7 @@
 
   author: Matthias W. Smith
   email:  mwsmith2@uw.edu
-  file:   vme_device.hh
+  file:   vme_base.hh
 
   about:  Implements the some basic vme functionality to form a base
           class that vme devices can inherit.  It really just defines
@@ -22,10 +22,10 @@
 #include <errno.h>
 
 //--- other includes --------------------------------------------------------//
-#include "vme/sis3100_vme_calls.h"
-#include "TFile.h"
 #include "boost/property_tree/ptree.hpp"
 #include "boost/property_tree/json_parser.hpp"
+#include "vme/sis3100_vme_calls.h"
+#include "TFile.h"
 
 //--- project includes ------------------------------------------------------//
 #include "common_base.hh"
@@ -101,7 +101,9 @@ int VmeBase::Read(uint addr, uint &msg)
 
   // Log an error if we couldn't open it at all
   if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
+    this->LogError("error opening %s: %s", 
+		   hw::vme_path.c_str(), 
+		   strerror(errno));
     return device_;
   }
 
@@ -143,7 +145,9 @@ int VmeBase::Write(uint addr, uint msg)
 
   // Log an error if we couldn't open it at all.
   if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
+    this->LogError("error opening %s: %s", 
+		   hw::vme_path.c_str(), 
+		   strerror(errno));
     return device_;
   }
 
