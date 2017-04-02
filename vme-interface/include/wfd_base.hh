@@ -101,7 +101,7 @@ public:
     queue_mutex_.unlock();
   }
 
-  inline void GenerateTrigger() {};
+  inline virtual void SoftwareTrigger() {};
 
   // Accessors.
   inline bool has_event() { return has_event_; };

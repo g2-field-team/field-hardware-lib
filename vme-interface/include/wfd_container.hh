@@ -69,7 +69,7 @@ class WfdContainer : public CommonBase {
   bool AnyWorkersHaveMultiEvent();
 
   // Trigger the WFDs via software.
-  void GenerateTriggers();
+  void SoftwareTriggers();
 
   // Copies event data into bundle.
   void GetEventData(event_data_t &bundle);
