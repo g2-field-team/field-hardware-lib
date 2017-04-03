@@ -89,6 +89,9 @@ class Caen1742 : public VmeBase, public WfdBase {
   // Returns oldest event data to event builder/frontend.
   wfd_data_t PopEvent();
 
+  // Accessor for LVDS IO bits.
+  inline ushort lvds_bits() { return lvds_bits_; };
+
 private:
 
   static constexpr double vpp_ = 1.0; // Scale of the device's voltage range
@@ -96,9 +99,11 @@ private:
   const static uint kNumAdcGroups = 4;
   const static uint kNumAdcChannels = 32;
   const static uint kNumAdcSamples = 1024;
+  const static uint kNumLvdsBits = 16;
   
   int device_;
   uint sampling_setting_;
+  ushort lvds_bits_;
   uint size_, bsize_;
   char *buffer_;
   bool drs_cell_corrections_;

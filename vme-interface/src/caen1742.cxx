@@ -157,6 +157,17 @@ void Caen1742::LoadConfig()
     LogError("failed to enable digitization of triggers");
   }
 
+  // Set the LVDS pins direction to input.
+  rc = Read(0x811C, msg);
+  if (rc != 0){
+    LogError("failed to read LVDS IO direction");
+  }
+
+  rc = Write(0x811C, msg | 0x3c);
+  if (rc != 0) {
+    LogError("failed to set LVDS IO to input.");
+  }
+
   // set TRn thresholds to negative NIM level
   int gr = 0;
   for (auto &addr : std::vector<uint>{0x1000, 0x1200}) {
@@ -526,43 +537,23 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
     LogDebug("begin readout of event length: %i", msg);
   }
   
-  /*
-  //works OK at about 20 Hz  
-  buffer.resize(msg);
-  read_trace_len_read_ = msg;
-  LogDebug("begin readout of event length: %i", msg);
-  ReadTraceDma32Fifo(0x0, &buffer[0]);
-  */
-  
   read_len_ = buffer.capacity();
   rc = ReadTraceMblt64SameBlock(0x0, &buffer[0]);
 
-  //rc > 0: number of words read
-  //rc < 0: -retval;
+  // rc > 0: number of words read
+  // rc < 0: -retval;
   if (rc < 0) {
     std::fill(buffer.begin(), buffer.end(), 0);
     buffer.resize(0);
     return;
   }
 
-  // std::cout << "num words read: " << rc << std::endl;
-  // std::cout << "header: " << std::hex << buffer[0] << " ";
-  // std::cout << buffer[1] << " " << buffer[2] << " " << std::endl;
-
   // Make sure we aren't getting empty events
-  // if (buffer.size() < 5) {
   if (rc < 5) {
     return;
   }
 
   LogDebug("finished, element zero is %08x", buffer[0]);
-  // Get the number of current events buffered.
-  //rc = Read(0x812c, msg);
-  //if (rc != 0) {
-  //  LogError("failed to read current number of buffered events");
-  //}
-
-  //LogDebug("%i events in memory", msg);
 
   // Figure out the group mask
   bool grp_mask[kNumAdcGroups];
@@ -570,6 +561,9 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
   for (int i = 0; i < kNumAdcGroups; ++i) {
     grp_mask[i] = buffer[1] & (0x1 << i);
   }
+
+  // Copy the latched LVDS bits.
+  lvds_bits_ = (buffer[1] >> 8) & 0xffff;
   
   // Now unpack the data for each group
   uint header;
