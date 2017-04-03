@@ -7,7 +7,7 @@ PREFIX=/usr/local
 LIBDIR=$(PREFIX)/lib
 INCDIR=$(PREFIX)/include/g2field
 CONFDIR=$(PREFIX)/etc/g2field
-LOGDIR=$(PREFIX)/var/log/g2field
+LOGDIR=/var/log/g2field
 
 # Library info.
 MAJOR=0

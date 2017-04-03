@@ -24,7 +24,7 @@ std::mutex vme_mutex;
 std::string conf_dir("/usr/local/etc/g2field/");
 
 // Set the default logging behavior
-int CommonBase::logging_verbosity_ = 3;
+int CommonBase::logging_verbosity_ = 2;
 std::string CommonBase::logfile_("/var/log/g2field/vme-hw.log");
 std::fstream CommonBase::logstream_(logfile_);
 std::mutex CommonBase::log_mutex_;
