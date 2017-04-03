@@ -187,12 +187,6 @@ void Caen1742::LoadConfig()
     gr += 2;
   }
 
-  // enable front panel trigger out
-  /*  rc = Write(0x8110, 0xc000000f);
-  if (rc != 0) {
-    LogError("Failed to set front panel trigger out enable mask");
-    }*/
-
   rc = Read(0x8120, msg);
   if (rc != 0) {
     LogError("failed to read group enable mask");
@@ -353,20 +347,6 @@ void Caen1742::LoadConfig()
 
   usleep(1000);
 
-  /*
-   // Send a test software trigger and read it out.
-   rc = Write(0x8108, msg);
-   if (rc != 0) {
-     LogError("failed to send test software trigger");
-   }
-
-   // Read initial empty event.
-   LogDebug("eating first empty event");
-   if (EventAvailable()) {
-     caen_1742 bundle;
-     GetEvent(bundle);
-     }*/
-
   // clear data,
   // this prevents the digitizer from sometimes hanging in busy mode
   rc = Write(0xef28, msg);
@@ -385,6 +365,10 @@ void Caen1742::WorkLoop()
   while (thread_live_) {
 
     while (go_time_) {
+
+      if (generate_software_trigger_) {
+        GenerateTrigger();
+      }
 
       if (EventAvailable()) {
 	
@@ -447,6 +431,15 @@ wfd_data_t Caen1742::PopEvent()
     queue_mutex_.unlock();
     return data;
   }
+}
+
+
+void Caen1742::GenerateTrigger()
+{
+  // Send a software trigger vie VME.
+  if (Write(0x8108, 0x1)) {
+     LogError("failed to generate software trigger");
+   }
 }
 
 

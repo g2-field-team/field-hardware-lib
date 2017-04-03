@@ -89,6 +89,11 @@ class Caen1742 : public VmeBase, public WfdBase {
   // Returns oldest event data to event builder/frontend.
   wfd_data_t PopEvent();
 
+  // Generate an internal trigger.
+  inline void SoftwareTrigger() {
+    generate_software_trigger_ = true;
+  }
+
   // Accessor for LVDS IO bits.
   inline ushort lvds_bits() { return lvds_bits_; };
 
@@ -110,6 +115,7 @@ private:
   bool drs_peak_corrections_;
   bool drs_time_corrections_;
   bool corrections_from_disk_;
+  std::atomic<bool> generate_software_trigger_;
 
   std::chrono::high_resolution_clock::time_point t0_;
 
@@ -122,6 +128,9 @@ private:
   drs_correction correction_table_;
 
   std::string conf_file_;
+
+  // Generate an internal trigger.
+  void GenerateTrigger();
 
   // Ask device whether it has data.
   bool EventAvailable();
