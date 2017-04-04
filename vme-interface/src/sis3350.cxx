@@ -2,7 +2,7 @@
 
 namespace hw {
 
-  Sis3350::Sis3350(std::string name, std::string conf, int trace_len) :
+Sis3350::Sis3350(std::string name, std::string conf, int trace_len) :
   CommonBase(name), VmeBase(name, conf), WfdBase(name, conf, 4, trace_len)
 {
   // Grab the config file and load it.
@@ -16,12 +16,13 @@ namespace hw {
   StartWorker();
 }
 
+
 void Sis3350::LoadConfig()
 {
+  LogDebug("configuring %s with file: %s", name_.c_str(), conf_file_.c_str());
+
   int rc = 0;
   uint msg = 0;
-
-  LogMessage("configuring %s with file: %s", name_.c_str(), conf_file_.c_str());
 
   // Open the configuration file.
   boost::property_tree::ptree conf;
@@ -41,7 +42,7 @@ void Sis3350::LoadConfig()
 
   } else {
 
-    LogMessage("found SIS3350 module at: 0x%08x", base_address_);
+    LogMessage("Found %s, a SIS3350 module at 0x%08x", name_, base_address_);
   }
 
   // Reset device.
@@ -86,8 +87,8 @@ void Sis3350::LoadConfig()
     LogError("failed to readback control/status register");
   }
 
-  LogMessage("external trigger: %s", ((msg & 0x10) == 0x10) ? "NIM" : "TTL");
-  LogMessage("user LED: %s", (msg & 0x1) ? "ON" : "OFF");
+  LogDebug("external trigger: %s", ((msg & 0x10) == 0x10) ? "NIM" : "TTL");
+  LogDebug("user LED: %s", (msg & 0x1) ? "ON" : "OFF");
 
   // Set to the acquisition register.
   msg = 0x1;//sync ring buffer mode
@@ -111,7 +112,7 @@ void Sis3350::LoadConfig()
 
   } else {
 
-    LogMessage("ACQ register set to: 0x%08x", msg);
+    LogDebug("ACQ register set to: 0x%08x", msg);
   }
 
   // Set the synthesizer register.
@@ -201,7 +202,7 @@ void Sis3350::LoadConfig()
 
   } else {
 
-    LogMessage("board temperature: %.2f degC", (float)msg / 4.0);
+    LogDebug("board temperature: %.2f degC", (float)msg / 4.0);
   }
 
   //ring buffer sample length
@@ -296,7 +297,7 @@ void Sis3350::LoadConfig()
       LogError("failed to set gain for channel %i", ch);
     }
 
-    LogMessage("ADC %d gain %d", ch, msg);
+    LogDebug("ADC %d gain %d", ch, msg);
 
     ++ch;
     usleep(20000);
@@ -309,6 +310,7 @@ void Sis3350::LoadConfig()
   }
 } // LoadConfig
 
+
 void Sis3350::WorkLoop()
 {
   t0_ = std::chrono::high_resolution_clock::now();
@@ -319,6 +321,7 @@ void Sis3350::WorkLoop()
     if (EventAvailable()) {
 
       static wfd_data_t bundle;
+
       GetEvent(bundle);
 
       queue_mutex_.lock();
@@ -342,6 +345,7 @@ void Sis3350::WorkLoop()
     usleep(hw::long_sleep);
   }
 }
+
 
 wfd_data_t Sis3350::PopEvent()
 {
@@ -396,6 +400,8 @@ bool Sis3350::EventAvailable()
       }
     } while ((rc != 0) && (count++ < 100));
 
+    LogMessage("found event");
+
     return is_event;
 
   } else {
@@ -404,10 +410,13 @@ bool Sis3350::EventAvailable()
   }
 }
 
+
 // Pull the event.
 void Sis3350::GetEvent(wfd_data_t &bundle)
 {
   using namespace std::chrono;
+
+  LogMessage("reading event data");
 
   // Make sure the bundle can handle the data.
   if (bundle.dev_clock.size() != num_ch_) {

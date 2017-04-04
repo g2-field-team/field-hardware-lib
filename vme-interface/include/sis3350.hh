@@ -39,7 +39,6 @@ public:
   // Reads the json config file and load the desired parameters.
   // An example:
   // {
-  //     "device":vme_path.c_str(),
   //     "base_address":"0x30000000",
   //     "pretrigger_samples":"0x100",
   //     "invert_ext_lemo":true,
@@ -60,6 +59,7 @@ public:
   //         85
   //     ]
   // }  
+
   void LoadConfig();
 
   // The threaded loop that polls for data and pushes events on the queue.
@@ -80,7 +80,6 @@ private:
 
   // Reads the event data out of the device via vme calls.
   void GetEvent(wfd_data_t &bundle);
-
 };
 
 } // ::hw
