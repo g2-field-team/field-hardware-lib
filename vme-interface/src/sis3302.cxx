@@ -9,7 +9,6 @@ Sis3302::Sis3302(std::string name, std::string conf, int trace_len) :
   conf_file_ = conf;
 
   LoadConfig();
-  LogMessage("worker created");
 
   read_len_ = trace_len / 2;
   has_event_ = false;
@@ -17,6 +16,8 @@ Sis3302::Sis3302(std::string name, std::string conf, int trace_len) :
 
   StartThread();
   StartWorker();
+
+  LogDebug("initializtion complete");
 }
 
 void Sis3302::LoadConfig()
@@ -27,7 +28,7 @@ void Sis3302::LoadConfig()
   uint msg = 0;
   char str[256];
 
-  LogMessage("configuring %s with file: %s", name_.c_str(), conf_file_.c_str());
+  LogDebug("configuring %s with file: %s", name_.c_str(), conf_file_.c_str());
 
   // Open the configuration file.
   boost::property_tree::ptree conf;
@@ -38,14 +39,14 @@ void Sis3302::LoadConfig()
 
   // Read the base register.
   rc = Read(CONTROL_STATUS, msg);
-  if (rc != 0) {
+  if (rc == 0) {
 
-    LogError("could not find SIS3302 device at 0x%08x", base_address_);
-    ++nerrors;
+    LogMessage("found %s, a SIS3302 at 0x%08x", name_.c_str(), base_address_);
 
   } else {
 
-    LogMessage("SIS3302 Found at 0x%08x", base_address_);
+    LogError("could not find SIS3302 device at 0x%08x", base_address_);
+    ++nerrors;
   }
 
   // Reset the device.
@@ -68,7 +69,7 @@ void Sis3302::LoadConfig()
                msg >> 16, (msg >> 8) & 0xff, msg & 0xff);
   }
 
-  LogMessage("setting the control/status register");
+  LogDebug("setting the control/status register");
   msg = 0;
 
   if (conf.get<bool>("invert_ext_lemo")) {
@@ -97,10 +98,10 @@ void Sis3302::LoadConfig()
 
   } else {
 
-    LogMessage("user LED is %s", (msg & 0x1) ? "ON" : "OFF");
+    LogDebug("user LED is %s", (msg & 0x1) ? "ON" : "OFF");
   }
 
-  LogMessage("setting the acquisition register");
+  LogDebug("setting the acquisition register");
   msg = 0;
 
   if (conf.get<bool>("enable_int_stop", true))
@@ -112,13 +113,13 @@ void Sis3302::LoadConfig()
   // Set the clock source
   if (conf.get<bool>("enable_ext_clk", false)) {
 
-    LogMessage("enabling external clock");
+    LogDebug("enabling external clock");
     msg |= (0x5 << 12);
 
   } else {
 
     clk_rate_ = conf.get<int>("int_clk_setting_MHz", 100);
-    LogMessage("enabling internal clock");
+    LogDebug("enabling internal clock");
 
     if (clk_rate_ > 100) {
 
@@ -189,10 +190,10 @@ void Sis3302::LoadConfig()
 
   } else {
 
-    LogMessage("acquisition register set to: 0x%08x", msg);
+    LogDebug("acquisition register set to: 0x%08x", msg);
   }
 
-  LogMessage("setting start/stop delays");
+  LogDebug("setting start/stop delays");
   msg = conf.get<int>("start_delay", 0);
 
   rc = Write(START_DELAY, msg);
@@ -208,7 +209,7 @@ void Sis3302::LoadConfig()
     ++nerrors;
   }
 
-  LogMessage("setting event configuration register");
+  LogDebug("setting event configuration register");
   rc = Read(EVENT_CONFIG_ADC12, msg);
   if (rc != 0) {
     LogError("failed to read event configuration register");
@@ -226,7 +227,7 @@ void Sis3302::LoadConfig()
     ++nerrors;
   }
 
-  LogMessage("setting event length register and pre-trigger buffer");
+  LogDebug("setting event length register and pre-trigger buffer");
   // @hack -> The extra 512 pads against a problem in the wfd.
   msg = (trace_len_ - 4 + 512) & 0xfffffc;
   rc = Write(SAMPLE_LENGTH_ALL_ADC, msg);
@@ -243,7 +244,7 @@ void Sis3302::LoadConfig()
     ++nerrors;
   }
 
-  LogMessage("setting memory page");
+  LogDebug("setting memory page");
   msg = 0; //first 8MB chunk
 
   rc = Write(ADC_MEMORY_PAGE, msg);
@@ -253,7 +254,7 @@ void Sis3302::LoadConfig()
   }
 
   if (nerrors > 0) {
-    LogMessage("configuration failed with %i errors, killing worker", nerrors);
+    LogDebug("configuration failed with %i errors, killing worker", nerrors);
     exit(-1);
   }
 } // LoadConfig
@@ -357,7 +358,7 @@ bool Sis3302::EventAvailable()
       }
     } while ((rc != 0) && (count++ < kMaxPoll));
 
-    LogMessage("detected event and rearmed trigger logic");
+    LogDebug("detected event and rearmed trigger logic");
 
     return is_event;
   }
@@ -369,6 +370,8 @@ void Sis3302::GetEvent(wfd_data_t &bundle)
 {
   using namespace std::chrono;
   int ch, offset, rc, count = 0;
+
+  LogDebug("reading out event");
 
   // Make sure the bundle can handle the data.
   if (bundle.dev_clock.size() != num_ch_) {
@@ -403,7 +406,7 @@ void Sis3302::GetEvent(wfd_data_t &bundle)
   auto t1 = high_resolution_clock::now();
   auto dtn = t1.time_since_epoch() - t0_.time_since_epoch();
   bundle.sys_clock = duration_cast<milliseconds>(dtn).count();
-  LogMessage("reading out event at time: %u", bundle.sys_clock);
+  LogDebug("reading out event at time: %u", bundle.sys_clock);
 
   rc = Read(0x10000, timestamp[0]);
   if (rc != 0) {
@@ -440,13 +443,6 @@ void Sis3302::GetEvent(wfd_data_t &bundle)
 
   bundle.trace_length = trace_len_;
   bundle.sampling_rate = clk_rate_;
-
-  // for (ch = 0; ch < num_ch_; ch++) {
-
-  //   std::copy((ushort *)trace[ch],
-  //   	      (ushort *)trace[ch] + trace_len_,
-  //   	      bundle.trace[ch]);
-  // }
 }
 
 
