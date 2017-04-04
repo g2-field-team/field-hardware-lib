@@ -5,9 +5,10 @@
 
 namespace hw {
 
-  InoStepperMotor::InoStepperMotor(std::string conf_file):conf_file_(conf_file)
+  InoStepperMotor::InoStepperMotor(std::string conf_file) : 
+    conf_file_(conf_file)
   {
-    //load config params
+    // Load config params.
     boost::property_tree::ptree conf;
     boost::property_tree::read_json(conf_file_, conf);
 
@@ -17,36 +18,33 @@ namespace hw {
     steps_per_inch = 1.0 / conf.get<double>("inches_per_step");
     steps_per_cm = steps_per_inch / 2.5400;
 
-    //We need to make sure all the fields of pointer host_info are null
+    // We need to make sure all the fields of pointer host_info are null.
     memset(&host_info,0, sizeof host_info);
 
-    std::cout << "Setting up the structs..."  << std::endl;
-    
-    host_info.ai_family = AF_UNSPEC;  // IP version not specified. Can be both.
-    host_info.ai_socktype = SOCK_STREAM; // Use SOCK_STREAM for TCP 
-    host_info.ai_flags = AI_PASSIVE; //accept connection on any host IP's
+    host_info.ai_family = AF_UNSPEC;  // IP version not specified, can be both
+    host_info.ai_socktype = SOCK_STREAM; // Use SOCK_STREAM for TCP
+    host_info.ai_flags = AI_PASSIVE; // Accept connection on any host IP's
 
     // Now fill up the linked list of host_info structs with host's addr
-    status = getaddrinfo(ip_addr.c_str(),ip_port.c_str(), &host_info, &host_info_list);
+    status = getaddrinfo(ip_addr.c_str(),
+			 ip_port.c_str(), 
+			 &host_info, 
+			 &host_info_list);
+
     // getaddrinfo returns 0 on succes, other value when an error occured.
     // (translated into human readable text by the gai_gai_strerror function).
-    if (status != 0)  std::cout << "getaddrinfo error" << gai_strerror(status);
+    if (status != 0) {
+      std::cout << "getaddrinfo error" << gai_strerror(status);
+    }
 
     //Now lets create and connect to server
     Socket();
     Connect();
-
-    //Now lets listen for Clients
-    // Listen();
-    //Accept();
-
   }
 
-  InoStepperMotor::~InoStepperMotor() {
-    // freeaddrinfo(host_info_list);
+  InoStepperMotor::~InoStepperMotor() 
+  {
     close(socketfd);
-    //close(new_sd);
-    //if( new_sd ==1) close(new_sd);
   }
 
   void InoStepperMotor::Socket() {

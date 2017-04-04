@@ -8,7 +8,6 @@ Caen1742::Caen1742(std::string name, std::string conf, int trace_len) :
   conf_file_ = conf;
   
   LoadConfig();
-  LogMessage("worker created");
   
   read_len_ = trace_len;
   
@@ -16,6 +15,8 @@ Caen1742::Caen1742(std::string name, std::string conf, int trace_len) :
 
   StartThread();
   StartWorker();
+
+  LogDebug("initialization complete");
 }
   
 void Caen1742::LoadConfig()
@@ -45,10 +46,12 @@ void Caen1742::LoadConfig()
 
   // Board type
   if ((msg & 0xff) == 0x00) {
-    LogMessage("Found caen v1742");
+    LogMessage("found %s, a caen v1742 at 0x%08x",
+	       name_.c_str(), base_address_);
 
   } else if ((msg & 0xff) == 0x01) {
-    LogMessage("Found caen vx1742");
+    LogMessage("found %s, a caen vx1742 at 0x%08x", 
+	       name_.c_str(), base_address_);
   }
 
   // Check the serial number
@@ -67,7 +70,7 @@ void Caen1742::LoadConfig()
   }
 
   sn += (msg & 0xff);
-  LogMessage("Serial Number: %i", sn);
+  LogDebug("Serial Number: %i", sn);
 
   // Get the hardware revision numbers.
   uint rev[4];
@@ -98,7 +101,7 @@ void Caen1742::LoadConfig()
       LogError("failed to read temperature of DRS4 chip %i", i);
     }
 
-    LogMessage("DRS4 chip %i at temperature %i C", i, msg & 0xff);
+    LogDebug("DRS4 chip %i at temperature %i C", i, msg & 0xff);
   }
 
   // Software board reset.
@@ -211,15 +214,15 @@ void Caen1742::LoadConfig()
 
   if (sampling_rate < 1.75) {
     sampling_setting_ |= 0x2;  // 1.0 Gsps
-    LogMessage("sampling rate set to 1.0 Gsps");
+    LogDebug("sampling rate set to 1.0 Gsps");
 
   } else if (sampling_rate >= 1.75 && sampling_rate < 3.75) {
     sampling_setting_ |= 0x1;  // 2.5 Gsps
-    LogMessage("sampling rate set to 2.5 Gsps");
+    LogDebug("sampling rate set to 2.5 Gsps");
 
   } else if (sampling_rate >= 3.75) {
     sampling_setting_ |= 0x0;  // 5.0 Gsps
-    LogMessage("sampling rate set to 5.0 Gsps");
+    LogDebug("sampling rate set to 5.0 Gsps");
   }
 
   // Write the sampling rate.
@@ -354,7 +357,7 @@ void Caen1742::LoadConfig()
     LogError("failed to clear data");
   }
 
-  LogMessage("LoadConfig finished");
+  LogDebug("LoadConfig finished");
 
 }  // LoadConfig
 
@@ -493,6 +496,8 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
 {
   using namespace std::chrono;
 
+  LogMessage("reading out event");
+
   // Make sure the bundle can handle the data.
   if (bundle.dev_clock.size() != num_ch_) {
     bundle.dev_clock.resize(num_ch_);
@@ -590,7 +595,8 @@ void Caen1742::GetEvent(wfd_data_t &bundle)
     stop_idx = start_idx + data_size;
     sample = 0;
 
-    LogDebug("start = %i, stop = %i, size = %u", start_idx, stop_idx, data_size);
+    LogDebug("start, stop, size = %i, %i, %u", start_idx, stop_idx, data_size);
+
     for (int i = start_idx; i < stop_idx; i += 3) {
       uint ln0 = buffer[i];
       uint ln1 = buffer[i+1];
@@ -847,7 +853,8 @@ int Caen1742::TimeCorrection(wfd_data_t &data,
 
       for (j = 1; j < kNumAdcSamples; ++j) {
 
-	dt = correction_table_.time[i][(startcells[i]+j) % kNumAdcSamples] - t0;
+	int start_idx = (startcells[i]+j) % kNumAdcSamples;
+	dt = correction_table_.time[i][start_idx] - t0;
 	
 	if (dt > 0) {
 
@@ -881,8 +888,10 @@ int Caen1742::TimeCorrection(wfd_data_t &data,
     for (j = 1; j < kNumAdcSamples; ++j) {
       
       // Find the next sample in time order.
-      while ((k < kNumAdcSamples - 2) && (time[grp_idx][k+1] < j * sample_time))
+      while ((k < kNumAdcSamples - 2) && 
+	     (time[grp_idx][k+1] < j * sample_time)) {
 	++k;
+      }
       
       dv = data.trace[i][k+1] - data.trace[i][k];
       dt = time[grp_idx][k+1] - time[grp_idx][k];
@@ -921,7 +930,7 @@ int Caen1742::GetChannelCorrectionData(uint ch)
   pagenum |= (sampling_setting_) << 8;
   pagenum |= (ch % (kNumAdcChannels / kNumAdcGroups)) << 2;
   
-  LogMessage("channel %i pagenum = 0x%08x", ch, pagenum);
+  LogDebug("channel %i pagenum = 0x%08x", ch, pagenum);
 
   // Get the cell corrections
   for (int i = 0; i < 4; ++i) {
@@ -1002,7 +1011,9 @@ int Caen1742::GetChannelCorrectionData(uint ch)
   // Read the time correction if it's the first channel in the group.
   if (ch % (kNumAdcChannels / kNumAdcGroups) == 0) {
     
-    LogDebug("loading time corrections for gr %i", ch % (kNumAdcChannels / kNumAdcGroups));
+    LogDebug("loading time corrections for gr %i", 
+	     ch % (kNumAdcChannels / kNumAdcGroups));
+
     pagenum &= 0xf00;
     pagenum |= 0xa0;
 
