@@ -42,7 +42,7 @@ void Sis3350::LoadConfig()
 
   } else {
 
-    LogMessage("Found %s, a SIS3350 module at 0x%08x", name_, base_address_);
+    LogMessage("found %s, a SIS3350 at 0x%08x", name_.c_str(), base_address_);
   }
 
   // Reset device.

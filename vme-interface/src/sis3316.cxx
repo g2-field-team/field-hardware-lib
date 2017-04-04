@@ -18,17 +18,17 @@ Sis3316::Sis3316(std::string name, std::string conf, int trace_len) :
   StartThread();
   StartWorker();
 
-  LogMessage("initialization finished");
+  LogDebug("initialization finished");
 }
 
 void Sis3316::LoadConfig()
 {
   using std::string;
 
+  LogDebug("configuring %s with file: %s", name_.c_str(), conf_file_.c_str());
+
   int rc = 0, gr = 0, nerrors = 0;
   uint msg = 0, addr = 0;
-
-  LogMessage("configuring %s with file: %s", name_.c_str(), conf_file_.c_str());
 
   // Open the configuration file.
   boost::property_tree::ptree conf;
@@ -41,7 +41,7 @@ void Sis3316::LoadConfig()
   rc = Read(CONTROL_STATUS, msg);
   if (rc == 0) {
 
-    LogMessage("SIS3316 found at 0x%08x", base_address_);
+    LogMessage("found %s, SIS3316 at 0x%08x", name_.c_str(), base_address_);
 
   } else {
 
@@ -66,7 +66,7 @@ void Sis3316::LoadConfig()
   rc = Read(HARDWARE_VERSION, msg);
   if (rc == 0) {
 
-    LogMessage("device hardware version %i", msg & 0xf);
+    LogDebug("device hardware version %i", msg & 0xf);
 
   } else {
 
@@ -87,7 +87,7 @@ void Sis3316::LoadConfig()
       ++nerrors;
     }
 
-    LogMessage("ADC%i fpga firmware version 0x%08x", gr, msg);
+    LogDebug("ADC%i fpga firmware version 0x%08x", gr, msg);
   }
 
   // Check the board temperature
@@ -95,7 +95,7 @@ void Sis3316::LoadConfig()
   if (rc == 0) {
 
     short temp = (short)msg &0xffff;
-    LogMessage("device internal temperature is %0.2fC", temp * 0.25);
+    LogDebug("device internal temperature is %0.2fC", temp * 0.25);
 
   } else {
 
@@ -191,17 +191,17 @@ void Sis3316::LoadConfig()
   msg = 0;
   if (conf.get<bool>("enable_ext_trg", true)) {
     msg |= (0x1 << 4); // enable external trigger bit
-    LogMessage("enabling external triggers");
+    LogDebug("enabling external triggers");
   }
 
   if (conf.get<bool>("invert_ext_trg", false)) {
     msg |= (0x1 << 5); // invert external trigger bit
-    LogMessage("inverting external triggers");
+    LogDebug("inverting external triggers");
   }
 
   if (conf.get<bool>("enable_ext_clk", false)) {
     msg |= (0x1 << 0); // enable external clock
-    LogMessage("enabling external clock");
+    LogDebug("enabling external clock");
   }
 
   // Write to NIM_INPUT_CTRL
@@ -213,12 +213,6 @@ void Sis3316::LoadConfig()
   }
 
   if (conf.get<bool>("enable_ext_clk", false)) {
-
-    // // Reset the device again.
-    // rc = Write(KEY_RESET, 0x1);
-    // if (rc != 0) {
-    //   LogError("failure to reset device");
-    // }
 
     // Disarm the device.
     rc = Write(KEY_DISARM, 0x1);
@@ -283,12 +277,6 @@ void Sis3316::LoadConfig()
     usleep(25000);
 
   } else {
-
-    // // Reset the device again.
-    // rc = Write(KEY_RESET, 0x1);
-    // if (rc != 0) {
-    //   LogError("failure to reset device");
-    // }
 
     // Disarm the device.
     rc = Write(KEY_DISARM, 0x1);
@@ -443,7 +431,7 @@ void Sis3316::LoadConfig()
 
     } else {
 
-      LogMessage("DAC offset readback register is 0x%08x", msg);
+      LogDebug("DAC offset readback register is 0x%08x", msg);
     }
   }
 
@@ -734,10 +722,11 @@ bool Sis3316::EventAvailable()
 
 void Sis3316::GetEvent(wfd_data_t &bundle)
 {
-  LogMessage("Reading out event");
   using namespace std::chrono;
   int ch, rc, count = 0;
   uint trace_addr, addr, offset, msg;
+
+  LogMessage("Reading out event");
 
   // Make sure the bundle can handle the data.
   if (bundle.dev_clock.size() != num_ch_) {
@@ -813,9 +802,9 @@ void Sis3316::GetEvent(wfd_data_t &bundle)
 
     do {
       data.resize(read_len_);
-      LogMessage("bench: start ReadTrace");
+      LogDebug("bench: start ReadTrace");
       rc = ReadTrace(trace_addr, (uint *)&data[0]);
-      LogMessage("bench: finish ReadTrace");
+      LogDebug("bench: finish ReadTrace");
 
       if (rc != 0) {
         LogError("failed to read trace for channel %i", ch);
