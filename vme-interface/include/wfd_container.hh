@@ -1,5 +1,5 @@
-#ifndef DAQ_FAST_CORE_INCLUDE_WORKER_LIST_HH_
-#define DAQ_FAST_CORE_INCLUDE_WORKER_LIST_HH_
+#ifndef VME_INTERFACE_INCLUDE_WFD_CONTAINER_HH_
+#define VME_INTERFACE_INCLUDE_WFD_CONTAINER_HH_
 
 /*===========================================================================*\
 
@@ -19,9 +19,8 @@
 
 //--- project includes ------------------------------------------------------//
 #include "common.hh"
-#include "sis3302.hh"
-#include "sis3316.hh"
-#include "sis3350.hh"
+#include "common_base.hh"
+#include "wfd_base.hh"
 
 namespace hw {
 
@@ -32,9 +31,7 @@ class WfdContainer : public CommonBase {
   // ctor
   WfdContainer() : CommonBase("WfdContainer") {};
 
-  // dtor - the WfdContainer takes ownership of workers appended to
-  // its worker vector.  They can be freed externally, but we need to
-  // be sure.
+  // dtor - the WfdContainer takes ownership of its workers
   ~WfdContainer() {
     if (workers_.size() != 0) {
       FreeList();
@@ -82,7 +79,7 @@ class WfdContainer : public CommonBase {
     workers_.push_back(worker);
   }
 
-  // Deallocates each worker.
+  // Deallocate each worker.
   void FreeList();
     
   // Return the size of the list.
@@ -96,7 +93,7 @@ class WfdContainer : public CommonBase {
 
  private:
 
-  // This is the actual worker list.
+  // The actual worker list.
   std::vector<WfdBase *> workers_;
 };
 
