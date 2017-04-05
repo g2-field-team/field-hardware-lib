@@ -54,10 +54,13 @@ public:
   // VmeBase(std::string name, boost::property_tree::ptree pt) :
   // CommonBase(name, conf);
 
+  void SetWaitTimeUs(int time) { wait_time_us_ = time; };
+  void SetMaxReadAttempts(int max) { max_read_attempts_ = max; };
+
 protected:
 
-  const int max_read_attempts_ = 100;
-  const int wait_time_us_ = 1000;
+  int max_read_attempts_ = 1000;
+  int wait_time_us_ = 250;
 
   int device_;
   int read_len_;
