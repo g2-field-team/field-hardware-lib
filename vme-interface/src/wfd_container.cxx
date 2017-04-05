@@ -8,55 +8,53 @@ void WfdContainer::StartRun()
   StartWorkers();
 }
 
+
 void WfdContainer::StopRun()
 {
   StopWorkers();
   StopThreads();
 }
 
+
 void WfdContainer::StartWorkers()
 {
-  // Starts gathering data.
   LogMessage("Starting workers");
-
   for (auto it = workers_.begin(); it != workers_.end(); ++it) {
     (*it)->StartWorker();
   }
 }
 
+
 void WfdContainer::StartThreads()
 {
-  // Launches the data worker threads.
-  LogMessage("Launching worker threads");
-
+  LogDebug("Launching worker threads");
   for (auto it = workers_.begin(); it != workers_.end(); ++it) {
     (*it)->StartThread();
   }
 }
 
+
 void WfdContainer::StopWorkers()
 {
-  // Stop collecting data.
   LogMessage("Stopping workers");
-
   for (auto it = workers_.begin(); it != workers_.end(); ++it) {
     (*it)->StopWorker();
   }
 }
 
+
 void WfdContainer::StopThreads()
 {
-  // Stop and rejoin worker threads.
-  LogMessage("Stopping worker threads");
-
+  LogDebug("Stopping worker threads");
   for (auto it = workers_.begin(); it != workers_.end(); ++it) {
     (*it)->StopThread();
   }
 }
 
+
 bool WfdContainer::AllWorkersHaveEvent()
 {
-  // Check each worker for an event.
+  LogDebug("Checking if all workers have an event");
   bool has_event = true;
 
   // If any worker doesn't have an event, has_event will become false.
@@ -67,9 +65,10 @@ bool WfdContainer::AllWorkersHaveEvent()
   return has_event;
 }
 
+
 bool WfdContainer::AnyWorkersHaveEvent()
 {
-  // Check each worker for an event.
+  LogDebug("Checking if any workers have an event");
   bool any_events = false;
 
   // A bitwise or here works, so that any event will return positive.
@@ -80,9 +79,10 @@ bool WfdContainer::AnyWorkersHaveEvent()
   return any_events;
 }
 
+
 bool WfdContainer::AnyWorkersHaveMultiEvent()
 {
-  // Check each worker for more than one event.
+  LogDebug("Checking if some workers have multiple events");
   int num_events = 0;
 
   for (auto it = workers_.begin(); it != workers_.end(); ++it) {
@@ -93,27 +93,37 @@ bool WfdContainer::AnyWorkersHaveMultiEvent()
   return false;
 }
 
+
+void WfdContainer::SoftwareTriggers()
+{
+  LogDebug("Issuing software trigger to workers");
+  for (auto it = workers_.begin(); it != workers_.end(); ++it) {
+    (*it)->SoftwareTrigger();
+  }
+}
+
+
 void WfdContainer::GetEventData(event_data_t &bundle)
 {
-  // Loops over each worker and collect the event data.
+  LogMessage("Collecting data from workers");
   for (auto it = workers_.begin(); it != workers_.end(); ++it) {
     bundle.push_back((*it)->PopEvent());
   }
 }
 
+
 void WfdContainer::FlushEventData()
 {
-  // Drops any stale events when workers should have no events.
+  LogDebug("Flushing stale events from workers");
   for (auto it = workers_.begin(); it != workers_.end(); ++it) {
     (*it)->FlushEvents();
   }
 }
 
+
 void WfdContainer::FreeList()
 {
-  // Delete the allocated workers.
-  LogMessage("Freeing workers");
-
+  LogDebug("Freeing workers");
   for (auto it = workers_.begin(); it != workers_.end(); ++it) {       
     delete *it;
   }

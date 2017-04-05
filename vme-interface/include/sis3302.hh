@@ -56,6 +56,10 @@ class Sis3302 : public VmeBase, public WfdBase {
   // Returns the oldest event on the data queue.
   wfd_data_t PopEvent();
 
+  void SoftwareTrigger() {
+    generate_software_trigger_ = true;
+  };
+
  private:
   
   // Register constants which are substrings of those given by Struck.
@@ -81,6 +85,7 @@ class Sis3302 : public VmeBase, public WfdBase {
   const int kMaxPoll = 500;
 
   int clk_rate_;
+  std::atomic<bool> generate_software_trigger_;
 
   std::string conf_file_;
 
@@ -94,6 +99,9 @@ class Sis3302 : public VmeBase, public WfdBase {
 
   // Reads the data from the device with vme calls.
   void GetEvent(wfd_data_t &bundle);
+
+  // Trigger the device internally.
+  void GenerateTrigger();
 };
 
 } // ::hw

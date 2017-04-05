@@ -17,6 +17,7 @@
 //--- std includes ----------------------------------------------------------//
 #include <chrono>
 #include <iostream>
+#include <sys/stat.h>
 
 //--- project includes ------------------------------------------------------//
 #include "vme_base.hh"
@@ -43,6 +44,8 @@ class Caen1742 : public VmeBase, public WfdBase {
   //     "drs_cell_corrections":true,
   //     "drs_peak_corrections":false,
   //     "drs_time_corrections":true,
+  //     "write_correction_data_csv":false,
+  //     "load_correction_from_disk":true,
   //     "channel_offset":[
   // 	     0.15,
   // 	     0.15,
@@ -86,33 +89,48 @@ class Caen1742 : public VmeBase, public WfdBase {
   // Returns oldest event data to event builder/frontend.
   wfd_data_t PopEvent();
 
+  // Generate an internal trigger.
+  inline void SoftwareTrigger() {
+    generate_software_trigger_ = true;
+  }
+
+  // Accessor for LVDS IO bits.
+  inline ushort lvds_bits() { return lvds_bits_; };
+
 private:
 
   static constexpr double vpp_ = 1.0; // Scale of the device's voltage range
   const static ushort peakthresh = 30; // For peak corrections
-  const static uint kNumAdcGroups = 2;
+  const static uint kNumAdcGroups = 4;
   const static uint kNumAdcChannels = 32;
   const static uint kNumAdcSamples = 1024;
+  const static uint kNumLvdsBits = 16;
   
   int device_;
   uint sampling_setting_;
+  ushort lvds_bits_;
   uint size_, bsize_;
   char *buffer_;
   bool drs_cell_corrections_;
   bool drs_peak_corrections_;
   bool drs_time_corrections_;
+  bool corrections_from_disk_;
+  std::atomic<bool> generate_software_trigger_;
 
   std::chrono::high_resolution_clock::time_point t0_;
 
   typedef struct {
-    int16_t cell[16][1024];
-    int8_t  nsample[16][1024];
-    float   time[2][1024];
+    int16_t cell[kNumAdcChannels][kNumAdcSamples];
+    int8_t  nsample[kNumAdcChannels][kNumAdcSamples];
+    float   time[kNumAdcGroups][kNumAdcSamples];
   } drs_correction;
 
   drs_correction correction_table_;
 
   std::string conf_file_;
+
+  // Generate an internal trigger.
+  void GenerateTrigger();
 
   // Ask device whether it has data.
   bool EventAvailable();
@@ -151,6 +169,9 @@ private:
 
   // Optionally write out the correction data as a csv to observe.
   int WriteCorrectionDataCsv();
+
+  // Load the correction table from disk.
+  int LoadCorrectionDataCsv(std::string fn);
 };
 
 } // ::daq

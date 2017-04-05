@@ -42,7 +42,8 @@ void DioMuxController::AddMux(std::string mux_name, int port_idx, bool old_mux)
 
 void DioMuxController::SetMux(std::string mux_name, int mux_ch)
 {
-  io_board_.WritePort(mux_port_map_[mux_name], mux_channel_map_[mux_name][mux_ch]);
+  io_board_.WritePort(mux_port_map_[mux_name], 
+		      mux_channel_map_[mux_name][mux_ch]);
 
   // Need to wait due to unit's capacitance.
   usleep(10);

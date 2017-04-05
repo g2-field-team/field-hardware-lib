@@ -39,6 +39,8 @@ class CommonBase {
  protected:
 
   static const int name_width_ = 15;
+  static const int maxcount_ = 10;  
+  static const int sleep_time_us_ = 100;
 
   // These should be defined in common_extdef.hh
   static int logging_verbosity_;
@@ -56,20 +58,24 @@ class CommonBase {
     if (logging_verbosity_ > 3) {
       log_mutex_.lock();
 
-      while (!logstream_.is_open()) {
+      int count = 0;
+      while (!logstream_.is_open() && (count++ < maxcount_)) {
         logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+        usleep(sleep_time_us_);
       }
 
-      prepend(level::DUMP);
+      if (logstream_.is_open()) {
+	prepend(level::DUMP);
 
-      va_list args;
-      va_start(args, format);
-      vsprintf(logstr_, format, args);
-      va_end(args);
+	va_list args;
+	va_start(args, format);
+	vsprintf(logstr_, format, args);
+	va_end(args);
 
-      logstream_ << logstr_ << std::endl;
-      logstream_.close();
+	logstream_ << logstr_ << std::endl;
+	logstream_.close();
+      }
+
       log_mutex_.unlock();
     }
 
@@ -82,17 +88,23 @@ class CommonBase {
     if (logging_verbosity_ > 3) {
       log_mutex_.lock();
 
-      while (!logstream_.is_open()) {
+      int count = 0;
+      while (!logstream_.is_open() && (count++ < maxcount_)) {
         logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+        usleep(sleep_time_us_);
       }
 
-      prepend(level::DUMP);
+      if (logstream_.is_open()) {
+	prepend(level::DUMP);
 
-      logstream_ << message << std::endl;
+	logstream_ << message << std::endl;
+	logstream_.close();
+	log_mutex_.unlock();
 
-      logstream_.close();
-      log_mutex_.unlock();
+      } else {
+
+	log_mutex_.unlock();
+      }
     }
 
     return 0;
@@ -104,20 +116,24 @@ class CommonBase {
     if (logging_verbosity_ > 2) {
       log_mutex_.lock();
 
-      while (!logstream_.is_open()) {
+      int count = 0;
+      while (!logstream_.is_open() && (count++ < maxcount_)) {
         logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+        usleep(sleep_time_us_);
       }
 
-      prepend(level::DEBUG);
+      if (logstream_.is_open()) {
+	prepend(level::DEBUG);
 
-      va_list args;
-      va_start(args, format);
-      vsprintf(logstr_, format, args);
-      va_end(args);
+	va_list args;
+	va_start(args, format);
+	vsprintf(logstr_, format, args);
+	va_end(args);
+	
+	logstream_ << logstr_ << std::endl;
+	logstream_.close();
+      }
 
-      logstream_ << logstr_ << std::endl;
-      logstream_.close();
       log_mutex_.unlock();
     }
 
@@ -130,16 +146,19 @@ class CommonBase {
     if (logging_verbosity_ > 2) {
       log_mutex_.lock();
 
-      while (!logstream_.is_open()) {
+      int count = 0;
+      while (!logstream_.is_open() && (count++ < maxcount_)) {
         logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+        usleep(sleep_time_us_);
       }
 
-      prepend(level::DEBUG);
+      if (logstream_.is_open()) {
+	prepend(level::DEBUG);
 
-      logstream_ << message << std::endl;
+	logstream_ << message << std::endl;
+	logstream_.close();
+      }
 
-      logstream_.close();
       log_mutex_.unlock();
     }
 
@@ -152,20 +171,24 @@ class CommonBase {
     if (logging_verbosity_ > 1) {
       log_mutex_.lock();
 
-      while (!logstream_.is_open()) {
-        logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+      int count = 0;
+      while (!logstream_.is_open() && (count++ < maxcount_)) {
+	logstream_.open(logfile_, std::fstream::app | std::fstream::out);
+	usleep(sleep_time_us_);
+      }
+      
+      if (logstream_.is_open()) {
+	prepend(level::MESSAGE);
+
+	va_list args;
+	va_start(args, format);
+	vsprintf(logstr_, format, args);
+	va_end(args);
+	
+	logstream_ << logstr_ << std::endl;
+	logstream_.close();
       }
 
-      prepend(level::MESSAGE);
-
-      va_list args;
-      va_start(args, format);
-      vsprintf(logstr_, format, args);
-      va_end(args);
-
-      logstream_ << logstr_ << std::endl;
-      logstream_.close();
       log_mutex_.unlock();
     }
 
@@ -178,16 +201,19 @@ class CommonBase {
     if (logging_verbosity_ > 1) {
       log_mutex_.lock();
 
-      while (!logstream_.is_open()) {
-        logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+      int count = 0;
+      while (!logstream_.is_open() && (count++ < maxcount_)) {
+	logstream_.open(logfile_, std::fstream::app | std::fstream::out);
+	usleep(sleep_time_us_);
       }
 
-      prepend(level::MESSAGE);
+      if (logstream_.is_open()) {
 
-      logstream_ << message << std::endl;
+	prepend(level::MESSAGE);
+	logstream_ << message << std::endl;
+	logstream_.close();
+      }
 
-      logstream_.close();
       log_mutex_.unlock();
     }
 
@@ -200,21 +226,25 @@ class CommonBase {
     if (logging_verbosity_ > 0) {
       log_mutex_.lock();
 
-      while (!logstream_.is_open()) {
-        logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+      int count = 0;
+      while (!logstream_.is_open() && (count++ < maxcount_)) {
+	logstream_.open(logfile_, std::fstream::app | std::fstream::out);
+	usleep(sleep_time_us_);
+      }
+      
+      if (logstream_.is_open()) {
+
+	prepend(level::WARNING);
+
+	va_list args;
+	va_start(args, format);
+	vsprintf(logstr_, format, args);
+	va_end(args);
+	
+	logstream_ << logstr_ << std::endl;
+	logstream_.close();
       }
 
-      prepend(level::WARNING);
-
-      va_list args;
-      va_start(args, format);
-      vsprintf(logstr_, format, args);
-      va_end(args);
-
-      logstream_ << logstr_ << std::endl;
-
-      logstream_.close();
       log_mutex_.unlock();
     }
 
@@ -227,16 +257,19 @@ class CommonBase {
     if (logging_verbosity_ > 0) {
       log_mutex_.lock();
 
-      while (!logstream_.is_open()) {
-        logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+      int count = 0;
+      while (!logstream_.is_open() && (count++ < maxcount_)) {
+	logstream_.open(logfile_, std::fstream::app | std::fstream::out);
+	usleep(sleep_time_us_);
       }
 
-      prepend(level::WARNING);
+      if (logstream_.is_open()) {
 
-      logstream_ << warning << std::endl;
+	prepend(level::WARNING);
+	logstream_ << warning << std::endl;
+	logstream_.close();
+      }
 
-      logstream_.close();
       log_mutex_.unlock();
     }
 
@@ -247,22 +280,26 @@ class CommonBase {
   inline int LogError(const char *format, ...) {
 
     log_mutex_.lock();
-
-    while (!logstream_.is_open()) {
+    
+    int count = 0;
+    while (!logstream_.is_open() && (count++ < maxcount_)) {
       logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+      usleep(sleep_time_us_);
+    }
+    
+    if (logstream_.is_open()) {
+      
+      prepend(level::ERROR);
+
+      va_list args;
+      va_start(args, format);
+      vsprintf(logstr_, format, args);
+      va_end(args);
+      
+      logstream_ << logstr_ << std::endl;
+      logstream_.close();
     }
 
-    prepend(level::ERROR);
-
-    va_list args;
-    va_start(args, format);
-    vsprintf(logstr_, format, args);
-    va_end(args);
-
-    logstream_ << logstr_ << std::endl;
-
-    logstream_.close();
     log_mutex_.unlock();
 
     return 0;
@@ -273,16 +310,20 @@ class CommonBase {
 
     log_mutex_.lock();
 
-    while (!logstream_.is_open()) {
+    
+    int count = 0;
+    while (!logstream_.is_open() && (count++ < maxcount_)) {
       logstream_.open(logfile_, std::fstream::app | std::fstream::out);
-        usleep(10);
+      usleep(sleep_time_us_);
+    }
+    
+    if (logstream_.is_open()) {
+
+      prepend(level::ERROR);
+      logstream_ << error << std::endl;
+      logstream_.close();
     }
 
-    prepend(level::ERROR);
-
-    logstream_ << error << std::endl;
-
-    logstream_.close();
     log_mutex_.unlock();
 
     return 0;

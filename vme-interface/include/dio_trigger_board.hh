@@ -36,16 +36,20 @@ class DioTriggerBoard
   // Set the proper acromag port used for sending TTL triggers.
   void SetTriggerPort(int trg_port) { trg_port_ = trg_port; };
 
+  // Set the 
+  void SetTriggerMask(int trg_mask) { trg_mask_ = trg_mask; };
+
   // Fire TTL pulse
-  void FireTrigger(int trg_bit=0, int length_us=10);
+  void FireTrigger(int trg_bit=0, int length_us=0);
 
   // Fire TTL pulses
-  void FireTriggers(int trg_mask=0, int length_us=10);
+  void FireTriggers(int trg_mask=0, int length_us=0);
 
  private:
 
   AcromagIp470a io_board_;
   int trg_port_;
+  int trg_mask_;
 };
 
 } // ::hw
