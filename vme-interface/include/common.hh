@@ -46,8 +46,8 @@ extern std::string vme_path;
 extern std::string conf_dir;
 
 // Set sleep times for data polling threads.
-const int short_sleep = 10;
-const int long_sleep = 100;
+const int short_sleep = 25;
+const int long_sleep = 500;
 const double sample_period = 0.0001; // in milliseconds
 
 inline void light_sleep() {

@@ -289,13 +289,13 @@ void Sis3302::WorkLoop()
 
       } else {
 
-	std::this_thread::yield();
-	usleep(hw::short_sleep);
+	static auto dur1 = std::chrono::microseconds(hw::short_sleep);
+	std::this_thread::sleep_for(dur1);
       }
+      
+      static auto dur2 = std::chrono::microseconds(hw::long_sleep);
+      std::this_thread::sleep_for(dur2);
     }
-
-    std::this_thread::yield();
-    usleep(hw::long_sleep);
   }
 }
 
