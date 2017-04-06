@@ -60,6 +60,9 @@ class Sis3302 : public VmeBase, public WfdBase {
     generate_software_trigger_ = true;
   };
 
+  // Write the vme key register to generate an internal trigger.
+  int GenerateTrigger();
+
  private:
   
   // Register constants which are substrings of those given by Struck.
@@ -99,9 +102,6 @@ class Sis3302 : public VmeBase, public WfdBase {
 
   // Reads the data from the device with vme calls.
   void GetEvent(wfd_data_t &bundle);
-
-  // Trigger the device internally.
-  void GenerateTrigger();
 };
 
 } // ::hw

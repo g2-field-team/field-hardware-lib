@@ -846,14 +846,17 @@ void Sis3316::GetEvent(wfd_data_t &bundle)
 }
 
 
-void Sis3316::GenerateTrigger() 
+int Sis3316::GenerateTrigger() 
 {
   int rc = Write(KEY_TRIGGER, 0x1);
   if (rc != 0) {
     LogError("failed to generate internal trigger");
+    return rc;
   }
 
   generate_software_trigger_ = false;
+
+  return 0;
 }
 
 

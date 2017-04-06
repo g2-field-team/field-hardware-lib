@@ -446,14 +446,17 @@ void Sis3302::GetEvent(wfd_data_t &bundle)
 }
 
 
-void Sis3302::GenerateTrigger() 
+int Sis3302::GenerateTrigger() 
 {
   int rc = Write(KEY_START, 0x1);
   if (rc != 0) {
     LogError("failed to generate internal trigger");
+    return rc;
   }
 
   generate_software_trigger_ = false;
+
+  return 0;
 }
 
 } // ::hw

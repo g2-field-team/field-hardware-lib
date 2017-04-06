@@ -65,6 +65,9 @@ class Sis3316 : public VmeBase, public WfdBase {
   inline void SoftwareTrigger() {
     generate_software_trigger_ = true;
   }
+
+  // Write the vme key register to generate an internal trigger.
+  int GenerateTrigger();
       
   void PrintStatus();
   void PrintControlStatus();
@@ -134,9 +137,6 @@ class Sis3316 : public VmeBase, public WfdBase {
 
   // Reads the data from the device with vme calls.
   void GetEvent(wfd_data_t &bundle);
-
-  // Write the vme key register to generate an internal trigger.
-  void GenerateTrigger();
 
   // Auxilliary control utilities defined below:
   // internal oscillator via I2C, see SI570 manual
