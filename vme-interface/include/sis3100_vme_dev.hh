@@ -37,10 +37,15 @@ protected:
     std::string name="VmeDevice") : addr_(addr), addr_type_(addr_type), 
     mblt_type_(mblt_type), CommonBase(name) {};
 
+  int max_read_attempts_ = 250;
+  int read_wait_time_us_ = 2;
+
   // Open vme device handle from the standard struck location.
   inline void OpenVme() {
-    while (dev_ <= 0) {
+    int count = 0;
+    while ((dev_ <= 0) && (count++ < max_read_attempts_)) {
       dev_ = open(vme_path.c_str(), O_RDWR);
+      usleep(read_wait_time_us_);
     }
   }
 
