@@ -437,12 +437,19 @@ wfd_data_t Caen1742::PopEvent()
 }
 
 
-void Caen1742::GenerateTrigger()
+int Caen1742::GenerateTrigger()
 {
   // Send a software trigger vie VME.
-  if (Write(0x8108, 0x1)) {
-     LogError("failed to generate software trigger");
-   }
+  int rc = Write(0x8108, 0x1);
+
+  if (rc != 0) {
+    LogError("failed to generate software trigger");
+    return rc;
+  }
+
+  generate_software_trigger_ = false;
+
+  return 0;
 }
 
 

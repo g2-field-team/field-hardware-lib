@@ -94,6 +94,9 @@ class Caen1742 : public VmeBase, public WfdBase {
     generate_software_trigger_ = true;
   }
 
+  // Generate an internal trigger.
+  int GenerateTrigger();
+
   // Accessor for LVDS IO bits.
   inline ushort lvds_bits() { return lvds_bits_; };
 
@@ -128,9 +131,6 @@ private:
   drs_correction correction_table_;
 
   std::string conf_file_;
-
-  // Generate an internal trigger.
-  void GenerateTrigger();
 
   // Ask device whether it has data.
   bool EventAvailable();
