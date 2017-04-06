@@ -14,12 +14,11 @@ about:  Contains the data structures for several hardware devices in a single
 \*===========================================================================*/
 
 //--- std includes ----------------------------------------------------------//
-#include <vector>
-#include <array>
-#include <mutex>
-#include <cstdarg>
 #include <unistd.h>
 #include <sys/time.h>
+#include <cstdarg>
+#include <chrono>
+#include <vector>
 
 //--- other includes --------------------------------------------------------//
 #include "TFile.h"
@@ -69,6 +68,21 @@ inline long long steadyclock_us() {
 
  clock_gettime(CLOCK_MONOTONIC, &t);
  return (long long)(t.tv_sec)*1000000 + (long long)(t.tv_nsec * 0.001);
+}
+
+inline void wait_ns(int delta_t, int resolution=100) 
+{
+  using namespace std::chrono;
+  auto t0 = steady_clock::now();
+  auto t1 = steady_clock::now();
+  struct timespec step;
+  step.tv_sec = resolution / 1000000000;
+  step.tv_nsec = resolution % 1000000000;
+  
+  while (duration_cast<nanoseconds>(t1 - t0).count() < delta_t) {
+    nanosleep(&step, nullptr);
+    t1 = steady_clock::now();
+  }
 }
 
 } // ::hw
