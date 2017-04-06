@@ -87,7 +87,7 @@ class WfdContainer : public CommonBase {
   void Resize(int size) { workers_.resize(0); };
 
   // Create accessor for worker.
-  inline const WfdBase *operator[] (int i) {
+  inline WfdBase *operator[] (int i) {
     return workers_[i];
   };
 
