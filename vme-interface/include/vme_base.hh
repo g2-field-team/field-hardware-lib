@@ -65,7 +65,10 @@ protected:
   int device_;
   int read_len_;
   uint base_address_; // contained in the conf file.
-
+  std::mutex vme_mutex_;
+  
+  inline int OpenVme();
+  inline int CloseVme();
   inline int Read(uint addr, uint &msg);        // A32D32
   inline int Write(uint addr, uint msg);        // A32D32
   inline int Read16(uint addr, ushort &msg);    // A16D16
@@ -84,6 +87,50 @@ protected:
   inline int ReadTraceMblt64Fifo(uint addr, uint *trace);
 };
 
+int VmeBase::OpenVme() 
+{
+  vme_mutex_.lock();
+  int count = 0;
+
+  do {
+    device_ = open(hw::vme_path.c_str(), O_RDWR);
+    usleep(wait_time_us_);
+  } while ((device_ < 0) && (count++ < max_read_attempts_));
+
+  // Log an error if we couldn't open properly.
+  if (device_ < 0) {
+    this->LogError("error opening %s: %s", 
+		   hw::vme_path.c_str(), 
+		   strerror(errno));
+    vme_mutex_.unlock();
+    return -1;
+  }
+
+  return 0;
+}
+
+int VmeBase::CloseVme() 
+{
+  int rc = 0;
+  
+  if (device_ >= 0) {
+    rc = close(device_);
+  }
+
+  // Log an error if we couldn't close properly.
+  if (rc == -1) {
+    this->LogError("error closing %s: %s", 
+		   hw::vme_path.c_str(), 
+		   strerror(errno));
+  }
+
+  device_ = -1;
+
+  vme_mutex_.unlock();
+  return rc;
+}
+
+
 // Reads 4 bytes from the specified address offset.
 //
 // params:
@@ -94,24 +141,15 @@ protected:
 //   error code from vme read
 int VmeBase::Read(uint addr, uint &msg)
 {
-  static int retval, status, count;
+  int retval, status;
 
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all
-  if (device_ < 0) {
-    this->LogError("error opening %s: %s", 
-		   hw::vme_path.c_str(), 
-		   strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {;
+    return -1;
   }
 
   status = (retval = vme_A32D32_read(device_, base_address_ + addr, &msg));
-  close(device_);
+
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read32  failure at address 0x%08x", base_address_ + addr);
@@ -137,26 +175,16 @@ int VmeBase::Read(uint addr, uint &msg)
 
 int VmeBase::Write(uint addr, uint msg)
 {
-  static int retval, status, count;
+  int retval, status, count;
 
-  // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("error opening %s: %s", 
-		   hw::vme_path.c_str(), 
-		   strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {;
+    return -1;
   }
 
   // Make the vme call.
   status = (retval = vme_A32D32_write(device_, base_address_ + addr, msg));
-  close(device_);
+
+  CloseVme();
 
   if (status != 0) {
     this->LogError("write32 failure at address 0x%08x", base_address_ + addr);
@@ -183,21 +211,13 @@ int VmeBase::Read16(uint addr, ushort &msg)
 {
   static int retval, status, count;
 
-  // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {;
+    return -1;
   }
 
   status = (retval = vme_A32D16_read(device_, base_address_ + addr, &msg));
-  close(device_);
+
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read16  failure at address 0x%08x", base_address_ + addr);
@@ -225,21 +245,13 @@ int VmeBase::Write16(uint addr, ushort msg)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {;
+    return -1;
   }
 
   // Make our vme call.
   status = (retval = vme_A32D16_write(device_, base_address_ + addr, msg));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("write16 failure at address 0x%08x", base_address_ + addr);
@@ -269,16 +281,8 @@ int VmeBase::ReadTrace(uint addr, uint *trace)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {;
+    return -1;
   }
 
   // Make the vme call.
@@ -290,7 +294,7 @@ int VmeBase::ReadTrace(uint addr, uint *trace)
                                         trace,
                                         read_len_,
                                         &num_got));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read32_evme failed at 0x%08x", base_address_ + addr);
@@ -310,16 +314,8 @@ int VmeBase::ReadTrace(uint addr, uint *trace, int trace_len)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {;
+    return -1;
   }
 
   // Make the vme call.
@@ -331,7 +327,7 @@ int VmeBase::ReadTrace(uint addr, uint *trace, int trace_len)
                                         trace,
                                         trace_len,
                                         &num_got));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read32_evme failed at 0x%08x", base_address_ + addr);
@@ -352,16 +348,8 @@ int VmeBase::ReadTraceFifo(uint addr, uint *trace)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {;
+    return -1;
   }
 
   // Make the vme call.
@@ -370,7 +358,7 @@ int VmeBase::ReadTraceFifo(uint addr, uint *trace)
          				    trace,
          				    read_len_,
          				    &num_got));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read32_2evmefifo failed at 0x%08x", base_address_ + addr);
@@ -390,16 +378,8 @@ int VmeBase::ReadTraceFifo(uint addr, uint *trace, int trace_len)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {
+    return -1;
   }
 
   // Make the vme call.
@@ -408,7 +388,7 @@ int VmeBase::ReadTraceFifo(uint addr, uint *trace, int trace_len)
          				    trace,
          				    trace_len,
          				    &num_got));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read32_2evmefifo failed at 0x%08x", base_address_ + addr);
@@ -438,16 +418,8 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {
+    return -1;
   }
 
   // Make the vme call.
@@ -456,7 +428,7 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace)
                                         trace,
                                         read_len_,
                                         &num_got));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("readA32_mblt64 failed at 0x%08x, asked: %i, recv: %i, retval: %i",
@@ -477,16 +449,8 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace, int trace_len)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {
+    return -1;
   }
 
   // Make the vme call.
@@ -495,7 +459,7 @@ int VmeBase::ReadTraceMblt64(uint addr, uint *trace, int trace_len)
                                         trace,
                                         trace_len,
                                         &num_got));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("readA32_mblt64 failed at 0x%08x, asked: %i, recv: %i, retval: %i",
@@ -526,18 +490,9 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {
+    return -1;
   }
-
 
   int word_count = read_len_;
   unsigned int num_to_read;
@@ -568,7 +523,7 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace)
   if (offset > 0x0400) { status = offset; }
 
 
-  close(device_);
+  CloseVme();
 
   if (status < 0) {
     //this->LogError("readA32_mblt64 failed at 0x%08x, asked: %i, recv: %i, retval: %i, word count left: %i",
@@ -589,18 +544,9 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace, int trace_len)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {
+    return -1;
   }
-
 
   int word_count = trace_len;
   unsigned int num_to_read;
@@ -630,8 +576,7 @@ int VmeBase::ReadTraceMblt64SameBlock(uint addr, uint *trace, int trace_len)
   status = -retval;
   if (offset > 0x0400) { status = offset; }
 
-
-  close(device_);
+  CloseVme();
 
   if (status < 0) {
     //this->LogError("readA32_mblt64 failed at 0x%08x, asked: %i, recv: %i, retval: %i, word count left: %i",
@@ -662,16 +607,8 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {
+    return -1;
   }
 
   // Make the vme call.
@@ -680,7 +617,7 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace)
          				    trace,
          				    read_len_,
          				    &num_got));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read32_mblt_fifo failed at 0x%08x", base_address_ + addr);
@@ -700,16 +637,8 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace, int trace_len)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {
+    return -1;
   }
 
   // Make the vme call.
@@ -718,7 +647,7 @@ int VmeBase::ReadTraceMblt64Fifo(uint addr, uint *trace, int trace_len)
          				    trace,
          				    trace_len,
          				    &num_got));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read32_mblt_fifo failed at 0x%08x", base_address_ + addr);
@@ -747,16 +676,8 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {
+    return -1;
   }
 
   // Make the vme call.
@@ -765,7 +686,7 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace)
 					   trace,
 					   read_len_,
 					   &num_got));
-  close(device_);
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read32_blt32_fifo failed at 0x%08x, trace_len: %i, num got: %i, retval: %i",
@@ -786,16 +707,8 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace, int trace_len)
   static int retval, status, count;
 
   // Get the vme device handle.
-  count = 0;
-  do {
-    device_ = open(hw::vme_path.c_str(), O_RDWR);
-    usleep(wait_time_us_);
-  } while ((device_ < 0) && (count++ < max_read_attempts_));
-
-  // Log an error if we couldn't open it at all.
-  if (device_ < 0) {
-    this->LogError("failure to open device: %s", strerror(errno));
-    return device_;
+  if (OpenVme() == -1) {
+    return -1;
   }
 
   // Make the vme call.
@@ -804,7 +717,8 @@ int VmeBase::ReadTraceDma32Fifo(uint addr, uint *trace, int trace_len)
 					   trace,
 					   trace_len,
 					   &num_got));
-  close(device_);
+
+  CloseVme();
 
   if (status != 0) {
     this->LogError("read32_blt32_fifo failed at 0x%08x, trace_len: %i, num got: %i, retval: %i",
