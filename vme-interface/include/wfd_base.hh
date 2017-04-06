@@ -103,6 +103,8 @@ public:
 
   inline virtual void SoftwareTrigger() {};
 
+  inline virtual int GenerateTrigger() {};
+
   // Accessors.
   inline bool has_event() { return has_event_; };
 
