@@ -10,7 +10,8 @@ Caen1742::Caen1742(std::string name, std::string conf, int trace_len) :
   LoadConfig();
   
   read_len_ = trace_len;
-  
+
+  has_event_ = false;
   thread_live_ = true;
 
   StartThread();
