@@ -14,9 +14,9 @@
 #include <cstdio> 
 #include <string.h> 
 
-#include "vxi11/vxi11_user.h"
-#include "vxi11/vxi11_xdr.c"
-#include "vxi11/vxi11_clnt.c"
+//#include "vxi11/vxi11_user.h"
+//#include "vxi11/vxi11_xdr.c"
+//#include "vxi11/vxi11_clnt.c"
 
 #define YOKO_BUF_SIZE 1000 
 
@@ -32,7 +32,7 @@ namespace yokogawa_interface {
       kENABLED  = 1
    }; 
    
-   CLINK *clink;                                     // for VXI-11 connection  
+   //CLINK *clink;                                     // for VXI-11 connection  
 
    char *buf;                                        // for queries (in other functions)   
    char *REC_BUF;                                    // for queries (in ask function; this gets returned to buf)  

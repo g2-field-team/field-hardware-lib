@@ -1,6 +1,11 @@
+#include <stdio.h>
+
 #include "YokogawaInterface.hh"
+#include "vxi11_user.h"
 
 namespace yokogawa_interface { 
+   CLINK *clink = NULL;                                     // for VXI-11 connection  
+
    //___________________________________________________________________________
    int set_mode(int mode){
       const int SIZE = 20; 
@@ -194,6 +199,7 @@ namespace yokogawa_interface {
       buf     = new char[YOKO_BUF_SIZE+1]; 
       REC_BUF = new char[YOKO_BUF_SIZE+1]; 
       sprintf(DeviceIP,ip_addr); 
+      if (clink==NULL)clink = new CLINK;
       printf("Attempting to open the connection to IP address %s... \n",ip_addr); 
       int rc = vxi11_open_device(DeviceIP,clink);
       printf("Returning... \n"); 
@@ -202,8 +208,12 @@ namespace yokogawa_interface {
    //___________________________________________________________________________
    int close_connection(){
       int rc = vxi11_close_device(DeviceIP,clink);
+      if (clink!=NULL)delete clink;
+      clink = NULL;
       delete buf;
-      delete REC_BUF; 
-      return rc;  
+	//Comment from Ran: due to the returns of other functions, REC_BUF is already deleted.
+        //Suggest: Never return a pointer.
+      //delete REC_BUF; 
+      return rc;
    }
 }
