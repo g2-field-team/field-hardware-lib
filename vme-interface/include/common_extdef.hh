@@ -28,6 +28,7 @@ int CommonBase::logging_verbosity_ = 2;
 std::string CommonBase::logfile_("/var/log/g2field/vme-hw.log");
 std::fstream CommonBase::logstream_(logfile_);
 std::mutex CommonBase::log_mutex_;
+std::mutex CommonBase::vme_mutex_;
 
 } // ::hw
 

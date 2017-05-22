@@ -287,6 +287,9 @@ void Sis3302::WorkLoop()
         has_event_ = true;
         queue_mutex_.unlock();
 
+	LogMessage("received new event, queue size is %i.", 
+		   data_queue_.size());
+
       } else {
 
 	static auto dur1 = std::chrono::microseconds(hw::short_sleep);

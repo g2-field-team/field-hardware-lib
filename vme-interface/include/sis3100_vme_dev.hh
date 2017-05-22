@@ -43,6 +43,7 @@ protected:
   // Open vme device handle from the standard struck location.
   inline void OpenVme() {
     int count = 0;
+    vme_mutex_.lock();
     while ((dev_ <= 0) && (count++ < max_read_attempts_)) {
       dev_ = open(vme_path.c_str(), O_RDWR);
       usleep(read_wait_time_us_);
@@ -55,6 +56,7 @@ protected:
       close(dev_);
       dev_ = -1;
     }
+    vme_mutex_.unlock();
   }
 
   // Reset SIS3100 VME controller.

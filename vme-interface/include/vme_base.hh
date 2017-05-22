@@ -59,13 +59,12 @@ public:
 
 protected:
 
-  int max_read_attempts_ = 1000;
-  int wait_time_us_ = 250;
+  int max_read_attempts_ = 5000;
+  int wait_time_us_ = 200;
 
   int device_;
   int read_len_;
   uint base_address_; // contained in the conf file.
-  std::mutex vme_mutex_;
   
   inline int OpenVme();
   inline int CloseVme();

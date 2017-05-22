@@ -9,26 +9,30 @@ DioTriggerBoard::DioTriggerBoard(int board_addr,
   io_board_(board_addr, bid, use_sextets), 
   trg_port_(trg_port), trg_mask_(0xff) {}
 
-void DioTriggerBoard::FireTrigger(int trg_bit, int length_us)
+int DioTriggerBoard::FireTrigger(int trg_bit, int length_us)
 {
   // Get the current state and only flip the trigger bit.
+  int rc = 0;
   u_int8_t data;
-  io_board_.ReadPort(trg_port_, data);
+  rc += io_board_.ReadPort(trg_port_, data);
   data &= ~(0x1 << trg_bit);
 
   // Start the trigger and wait the allotted pulse time.
-  io_board_.WritePort(trg_port_, data);
+  rc += io_board_.WritePort(trg_port_, data);
   usleep(length_us);
 
   // Now turn the trigger bit back off.
-  io_board_.ReadPort(trg_port_, data);
+  rc += io_board_.ReadPort(trg_port_, data);
   data |= 0x1 << trg_bit;
-  io_board_.WritePort(trg_port_, data);
+  rc += io_board_.WritePort(trg_port_, data);
+
+  return rc;
 }
 
-void DioTriggerBoard::FireTriggers(int trg_mask, int length_us)
+int DioTriggerBoard::FireTriggers(int trg_mask, int length_us)
 {
   // Get the current state and only flip the trigger bit.
+  int rc = 0;
   u_int8_t data;
 
   if (trg_mask == 0) {
@@ -36,19 +40,21 @@ void DioTriggerBoard::FireTriggers(int trg_mask, int length_us)
   }
 
   // Start the trigger and wait the allotted pulse time.
-  io_board_.ReadPort(trg_port_, data);
+  rc += io_board_.ReadPort(trg_port_, data);
   data &= ~trg_mask;
 
-  io_board_.WritePort(trg_port_, data);
+  rc += io_board_.WritePort(trg_port_, data);
   
   if (length_us > 0) {
     usleep(length_us); 
   }
 
   // Now turn the trigger bit back off.
-  io_board_.ReadPort(trg_port_, data);
+  rc += io_board_.ReadPort(trg_port_, data);
   data |= trg_mask;
-  io_board_.WritePort(trg_port_, data);
+  rc += io_board_.WritePort(trg_port_, data);
+
+  return rc;
 }
 
 } // ::hw

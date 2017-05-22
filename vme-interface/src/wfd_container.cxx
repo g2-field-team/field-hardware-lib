@@ -54,7 +54,7 @@ void WfdContainer::StopThreads()
 
 bool WfdContainer::AllWorkersHaveEvent()
 {
-  LogDebug("Checking if all workers have an event");
+  LogDump("Checking if all workers have an event");
   bool has_event = true;
 
   // If any worker doesn't have an event, has_event will become false.
@@ -68,7 +68,7 @@ bool WfdContainer::AllWorkersHaveEvent()
 
 bool WfdContainer::AnyWorkersHaveEvent()
 {
-  LogDebug("Checking if any workers have an event");
+  LogDump("Checking if any workers have an event");
   bool any_events = false;
 
   // A bitwise or here works, so that any event will return positive.

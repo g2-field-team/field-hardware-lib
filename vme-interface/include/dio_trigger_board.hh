@@ -40,10 +40,10 @@ class DioTriggerBoard
   void SetTriggerMask(int trg_mask) { trg_mask_ = trg_mask; };
 
   // Fire TTL pulse
-  void FireTrigger(int trg_bit=0, int length_us=0);
+  int FireTrigger(int trg_bit=0, int length_us=0);
 
   // Fire TTL pulses
-  void FireTriggers(int trg_mask=0, int length_us=0);
+  int FireTriggers(int trg_mask=0, int length_us=0);
 
  private:
 

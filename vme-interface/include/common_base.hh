@@ -47,6 +47,7 @@ class CommonBase {
   static std::string logfile_;
   static std::fstream logstream_;
   static std::mutex log_mutex_;
+  static std::mutex vme_mutex_;
 
   std::string name_; // given class(hardware) name
   char logstr_[512];
