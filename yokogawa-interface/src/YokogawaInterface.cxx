@@ -208,11 +208,11 @@ namespace yokogawa_interface {
    //___________________________________________________________________________
    int close_connection(){
       int rc = vxi11_close_device(DeviceIP,clink);
-      if (clink!=NULL)delete clink;
+      if (clink!=NULL) delete clink;
       clink = NULL;
       delete buf;
-	//Comment from Ran: due to the returns of other functions, REC_BUF is already deleted.
-        //Suggest: Never return a pointer.
+      //Comment from Ran: due to the returns of other functions, REC_BUF is already deleted.
+      //Suggest: Never return a pointer.
       //delete REC_BUF; 
       return rc;
    }
