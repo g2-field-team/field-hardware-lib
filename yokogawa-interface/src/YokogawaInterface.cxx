@@ -118,6 +118,15 @@ namespace yokogawa_interface {
       return rc;  
    }  
    //___________________________________________________________________________
+   int clear_errors(){
+      const int SIZE = 20; 
+      char *cmd = new char[SIZE+1]; 
+      sprintf(cmd,"*CLS");
+      int rc = write(cmd);
+      delete cmd; 
+      return rc;  
+   }
+   //___________________________________________________________________________
    int get_output_state(){
       const int SIZE = 20; 
       char *cmd = new char[SIZE+1]; 

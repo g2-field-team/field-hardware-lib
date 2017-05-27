@@ -54,6 +54,7 @@ namespace yokogawa_interface {
    int set_clock_time(int hr,int min,int sec);  
    int set_clock_date(int month,int day,int year); 
   
+   int clear_errors(); 
    int write(const char *); 
    int open_connection(const char *ip_addr); 
    int close_connection(); 
