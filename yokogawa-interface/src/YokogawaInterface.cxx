@@ -5,7 +5,6 @@
 
 namespace yokogawa_interface { 
    CLINK *clink = NULL;                                     // for VXI-11 connection  
-
    //___________________________________________________________________________
    int set_mode(int mode){
       const int SIZE = 20; 
@@ -93,18 +92,28 @@ namespace yokogawa_interface {
       const int SIZE = 20; 
       char *cmd = new char[SIZE+1]; 
       sprintf(cmd,"*TST?");
-      buf = ask(cmd);
-      int rc = atoi(buf);
+      std::string response = ask(cmd);
+      int rc = atoi( response.c_str() );
       delete cmd; 
       return rc;  
    }  
    //___________________________________________________________________________
-   int error_check(){
+   int error_check(char *err_msg){
       const int SIZE = 20; 
       char *cmd = new char[SIZE+1]; 
       sprintf(cmd,":SYSTem::ERRor?");
-      buf    = ask(cmd);
-      int rc = atoi(buf);
+      std::string response = ask(cmd);
+      // parse the string; it's going to be an error code and a message
+      std::istringstream ss(response);
+      std::string token,entry[2];
+      int i=0;
+      while( std::getline(ss,token,',') ){
+         entry[i] = token;
+         i++;
+      }
+      // now return the data 
+      int rc = atoi(entry[0].c_str());     // zeroth entry is the error code
+      strcpy( err_msg,entry[1].c_str() );  // copy the message to the buffer 
       delete cmd; 
       return rc;  
    }  
@@ -113,8 +122,8 @@ namespace yokogawa_interface {
       const int SIZE = 20; 
       char *cmd = new char[SIZE+1]; 
       sprintf(cmd,"OUTP?");
-      buf    = ask(cmd);
-      int rc = atoi(buf);
+      std::string response = ask(cmd);
+      int rc = atoi( response.c_str() );
       delete cmd; 
       return rc;  
    }  
@@ -123,9 +132,9 @@ namespace yokogawa_interface {
       const int SIZE = 20; 
       char *cmd = new char[SIZE+1]; 
       sprintf(cmd,":SOUR:FUNC?");
-      buf = ask(cmd);
+      std::string response = ask(cmd);
       int rc=-1; 
-      int res = strcmp(buf,"CURR"); 
+      int res = strcmp(response.c_str(),"CURR"); 
       if (res==0) { 
 	 rc = kCURRENT;
       } else {
@@ -139,8 +148,8 @@ namespace yokogawa_interface {
       const int SIZE = 20; 
       char *cmd = new char[SIZE+1]; 
       sprintf(cmd,":SOUR:LEV?");
-      buf = ask(cmd);
-      double lvl = atof(buf);
+      std::string response = ask(cmd);
+      double lvl = atof( response.c_str() );
       delete cmd; 
       return lvl;  
    }  
@@ -149,37 +158,38 @@ namespace yokogawa_interface {
       const int SIZE = 20; 
       char *cmd = new char[SIZE+1]; 
       sprintf(cmd,":SOUR:RANG?");
-      buf = ask(cmd);
-      double r = atof(buf);
+      std::string response = ask(cmd);
+      double r = atof( response.c_str() );
       delete cmd; 
       return r;  
    }
    //___________________________________________________________________________
-   char *get_device_id(){
+   std::string get_device_id(){
       const int SIZE = 100; 
       char *cmd = new char[SIZE+1]; 
       sprintf(cmd,"*IDN?");
-      buf = ask(cmd);
+      std::string response = ask(cmd);
       delete cmd; 
-      return buf; 
+      return response; 
    }  
    //___________________________________________________________________________
-   char *get_clock_time(){
+   std::string get_clock_time(){
       const int SIZE = 100; 
       char *cmd = new char[SIZE+1]; 
       sprintf(cmd,":SYST:CLOC:TIME?");
-      buf = ask(cmd);
+      std::string response = ask(cmd);
       delete cmd; 
-      return buf; 
+      return response; 
    } 
    //___________________________________________________________________________
-   char *get_clock_date(){
+   std::string get_clock_date(){
       const int SIZE = 100; 
       char *cmd = new char[SIZE+1]; 
+      std::string response;  
       sprintf(cmd,":SYST:CLOC:DATE?");
-      buf = ask(cmd);
+      response = ask(cmd);
       delete cmd; 
-      return buf; 
+      return response; 
    } 
    //___________________________________________________________________________
    int write(const char *cmd){
@@ -187,17 +197,18 @@ namespace yokogawa_interface {
       return rc;
    } 
    //___________________________________________________________________________
-   char *ask(const char *cmd){
-      const int SIZE = 100; 
-      strcpy(REC_BUF,"");   // clear the receive buffer   
-      int rc = vxi11_send_and_receive(clink,cmd,REC_BUF,SIZE,100);  // last argument is a timeout 
-      if(rc!=0) strcpy(REC_BUF,"NO RESPONSE");                      // comms failed    
-      return REC_BUF;
+   std::string ask(const char *cmd){
+      const int SIZE = 512; 
+      char theBuf[SIZE];  
+      int rc = vxi11_send_and_receive(clink,cmd,theBuf,SIZE,100);  // last argument is a timeout 
+      if(rc!=0) strcpy(theBuf,"NO RESPONSE");                     // comms failed   
+      std::string response = std::string( theBuf ); 
+      return response;
    }
    //___________________________________________________________________________
    int open_connection(const char *ip_addr){
-      buf     = new char[YOKO_BUF_SIZE+1]; 
-      REC_BUF = new char[YOKO_BUF_SIZE+1]; 
+      // buf     = new char[YOKO_BUF_SIZE+1]; 
+      // REC_BUF = new char[YOKO_BUF_SIZE+1]; 
       sprintf(DeviceIP,ip_addr); 
       if (clink==NULL)clink = new CLINK;
       printf("Attempting to open the connection to IP address %s... \n",ip_addr); 
@@ -210,7 +221,7 @@ namespace yokogawa_interface {
       int rc = vxi11_close_device(DeviceIP,clink);
       if (clink!=NULL) delete clink;
       clink = NULL;
-      delete buf;
+      // delete buf;
       //Comment from Ran: due to the returns of other functions, REC_BUF is already deleted.
       //Suggest: Never return a pointer.
       //delete REC_BUF; 
