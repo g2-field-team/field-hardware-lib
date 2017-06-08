@@ -143,7 +143,8 @@ namespace yokogawa_interface {
       sprintf(cmd,":SOUR:FUNC?");
       std::string response = ask(cmd);
       int rc=-1; 
-      int res = strcmp(response.c_str(),"CURR"); 
+      int res = response.compare(0,4,"CURR"); 
+
       if (res==0) { 
 	 rc = kCURRENT;
       } else {
