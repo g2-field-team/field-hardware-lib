@@ -211,14 +211,12 @@ namespace yokogawa_interface {
       const int SIZE = 512; 
       char theBuf[SIZE];  
       int rc = vxi11_send_and_receive(clink,cmd,theBuf,SIZE,100);  // last argument is a timeout 
-      if(rc!=0) strcpy(theBuf,"NO RESPONSE");                     // comms failed   
+      if(rc!=0) strcpy(theBuf,"NO RESPONSE");                      // comms failed   
       std::string response = std::string( theBuf ); 
       return response;
    }
    //___________________________________________________________________________
    int open_connection(const char *ip_addr){
-      // buf     = new char[YOKO_BUF_SIZE+1]; 
-      // REC_BUF = new char[YOKO_BUF_SIZE+1]; 
       sprintf(DeviceIP,ip_addr); 
       if (clink==NULL)clink = new CLINK;
       printf("Attempting to open the connection to IP address %s... \n",ip_addr); 
@@ -231,10 +229,6 @@ namespace yokogawa_interface {
       int rc = vxi11_close_device(DeviceIP,clink);
       if (clink!=NULL) delete clink;
       clink = NULL;
-      // delete buf;
-      //Comment from Ran: due to the returns of other functions, REC_BUF is already deleted.
-      //Suggest: Never return a pointer.
-      //delete REC_BUF; 
       return rc;
    }
 }
