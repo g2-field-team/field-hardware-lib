@@ -21,8 +21,8 @@ all: $(BUILD_DIR)/CommDriver.o
 $(BUILD_DIR)/CommDriver.o: $(SRC_DIR)/CommDriver.cxx $(DEPS)
 	$(CXX) -o $@ -fPIC -c $< $(CFLAGS)
 
-$(LIB_DIR)/libCommDriver.so: $(BUILD_DIR)/CommDriver.o 
-	$(CXX) -shared -fPIC -o $@ $^ 
+# $(LIB_DIR)/libCommDriver.so: $(BUILD_DIR)/CommDriver.o 
+# 	$(CXX) -shared -fPIC -o $@ $^ 
 
 .PHONY: clean
 .PHONY: install
