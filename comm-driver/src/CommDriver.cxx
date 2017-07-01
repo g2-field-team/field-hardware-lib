@@ -180,7 +180,7 @@ namespace CommDriver {
       return rc;
    }
    //______________________________________________________________________________
-   int usbtmc_ask(int portNo,const char *query,char *response){
+   int usbtmc_query(int portNo,const char *query,char *response){
       int rc=0;
       const int SIZE = 512;
       char write_msg[SIZE],read_msg[SIZE]; 
