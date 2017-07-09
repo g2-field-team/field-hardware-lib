@@ -334,6 +334,11 @@ typedef struct _B_FRAME_INFO {
   int ClientTCPRead_ErrorCheck	(int rxStatus);
   int DeviceWriteMask	(unsigned int address, unsigned int mask, unsigned int value);
   int DeviceReadMask	(unsigned int address, unsigned int mask, unsigned int* value);
+  int DeviceNVWrite (unsigned int address, unsigned int value);
+  int DeviceNVArrayWrite (unsigned int address, unsigned int size, unsigned int* data);
+  int DeviceNVEraseSector (unsigned int address);
+  int DeviceNVEraseBlock (unsigned int address);
+  int DeviceNVEraseChip (unsigned int address);
 
   // Data Processing Functions:
   //Not yet defined
