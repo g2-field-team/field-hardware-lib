@@ -218,7 +218,7 @@ namespace yokogawa_interface {
    //___________________________________________________________________________
    int open_connection(const char *ip_addr){
       sprintf(DeviceIP,ip_addr); 
-      if (clink==NULL)clink = new CLINK;
+      if (clink==NULL) clink = new CLINK;
       printf("Attempting to open the connection to IP address %s... \n",ip_addr); 
       int rc = vxi11_open_device(DeviceIP,clink);
       printf("Returning... \n"); 
