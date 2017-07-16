@@ -56,15 +56,10 @@ bool FrameCheckSumPassed;
 
 
 int main(int argc,char **argv){
-  int NPulses = 10;
-  int NBarcodes = 300;
+  int NCycle = 10;
   if (argc>1){
-    NPulses = atoi(argv[1]);
+    NCycle = atoi(argv[1]);
   }
-  if (argc>2){
-    NBarcodes = atoi(argv[2]);
-  }
-
 
   int err = DeviceConnect("192.168.1.123");
   if (err<0)return -1;
@@ -75,6 +70,7 @@ int main(int argc,char **argv){
   unsigned int LEDV = val & 0x03FF;
   unsigned int LEDDisable = val & 0x0400;
   cout <<err<<" "<<LEDV<< " "<<LEDDisable<<endl;
+  DeviceWriteMask(0x40000944,0x00000001,0x00000001);
   DevicePurgeData();
   DeviceWriteMask(0x40000944,0x00000001,0x00000000);
 
@@ -113,23 +109,11 @@ int main(int argc,char **argv){
   cout <<"data read "<<rc<<", from Frame data read="<<FrameSize<<endl;
   cout<<"number of NMR samples "<<Frame[12]<<endl;
 
-  TGraph **gArray = new TGraph*[NPulses];
-  for (int j=0;j<NPulses;j++){
-    gArray[j] = new TGraph();
-    gArray[j]->SetName(Form("pulse%02d",j));
-  }
-  TGraph **gBarcodes = new TGraph*[6];
-  for (int j=0;j<6;j++){
-    gBarcodes[j] = new TGraph();
-    gBarcodes[j]->SetName(Form("Barcode%d",j));
-  }
   //Readout loop
   vector <int> zeros;
   int i=0;
   int gIndex = 0;
-  int NCycle = NPulses;
   int iNMR=0;
-  if (NBarcodes>NCycle)NCycle = NBarcodes;
   while (i<NCycle){
     //Read Frame
     rc = DataReceive((void *)Frame, (void *)FrameB, &sizeA, &sizeB);
@@ -138,7 +122,6 @@ int main(int argc,char **argv){
       cout <<"Data Error code "<<rc<<endl;
       return -1;
     }
-    continue;
  //   cout << i<<" "<<NCycle<<endl;
   //  FrameNumber = *((int *)(&(Frame[9])));
     memcpy(&FrameNumber,&(Frame[9]),sizeof(int));
@@ -150,7 +133,7 @@ int main(int argc,char **argv){
     cout<<"number of Barcode samples "<<Frame[13]<<endl;
 */
     LastFrameNumber=FrameNumber;
-
+/*
     trolley_nmr_t* TrlyNMRDataUnit = new trolley_nmr_t;
     trolley_barcode_t* TrlyBarcodeDataUnit = new trolley_barcode_t;
     trolley_monitor_t* TrlyMonitorDataUnit = new trolley_monitor_t;
@@ -235,26 +218,18 @@ int main(int argc,char **argv){
 
     delete TrlyNMRDataUnit;
     delete TrlyBarcodeDataUnit;
-    delete TrlyMonitorDataUnit;
+    delete TrlyMonitorDataUnit;*/
     i++;
   }
 
-  TFile f("Testout.root","recreate");
-  for (int j=0;j<NPulses;j++){
-    gArray[j]->Write();
-  }
-  for (int j=0;j<6;j++){
-    gBarcodes[j]->Write();
-  }
-  f.Close();
   //Test file operations
-  while(1){
+  /*while(1){
     int rc = DataReceive((void *)Frame, (void *)FrameB, &sizeA, &sizeB);
     if (rc<0){
       cout <<"Data Error code "<<rc<<endl;
       return -1;
     }
-  }
+  }*/
 
   //Disconnect
   DeviceWriteMask(0x40000944,0x00000001,0x00000001);
@@ -264,13 +239,5 @@ int main(int argc,char **argv){
   //cout <<err<<endl;
   delete []Frame;
   delete []FrameB;
-  for (int j=0;j<NPulses;j++){
-    delete gArray[j];
-  }
-  delete []gArray;
-  for (int j=0;j<6;j++){
-    delete gBarcodes[j];
-  }
-  delete []gBarcodes;
   return 0;
 }

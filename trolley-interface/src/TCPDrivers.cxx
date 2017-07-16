@@ -55,8 +55,10 @@ int ConnectToTCPServer(unsigned int *conversationHandle, unsigned int portNumber
 
   int errcode=0;
   errcode  =  connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr));
-/*  if (errcode < 0)
-    error("ERROR connecting");*/
+  /*if (errcode < 0)
+    error("ERROR connecting");
+    */
+
   FD_ZERO(&fdset);
   FD_SET(sockfd, &fdset);
   tv.tv_sec = timeOut/1000;             /* 10 second timeout */

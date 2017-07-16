@@ -112,6 +112,7 @@ namespace TrolleyInterface{
     DeviceWrite(trolleyReg.eventDataInterfaceSelect, 0x00000001);
 
     //Purge data before connect
+    DeviceWriteMask(0x40000944,0x00000001,0x00000001);
     DevicePurgeData();
 
     return errorNoError;
@@ -166,7 +167,8 @@ namespace TrolleyInterface{
     int rxStatus = 0;
     do
     {
-      rxStatus = ClientTCPRead(tcpDataHandle, (unsigned int*)(TCPdata), sizeof(TCPdata), tcpDataTimeout);
+      //rxStatus = ClientTCPRead(tcpDataHandle, (unsigned int*)(TCPdata), sizeof(TCPdata), tcpDataTimeout);
+      rxStatus = ClientTCPRead(tcpDataHandle, (unsigned int*)(TCPdata), sizeof(TCPdata), 500);
     } while(rxStatus > 0);
     return error;
   }
