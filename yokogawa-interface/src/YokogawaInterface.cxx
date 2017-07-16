@@ -55,7 +55,7 @@ namespace yokogawa_interface {
    int set_level(double lvl){
       const int SIZE = 20; 
       char *cmd = new char[SIZE+1]; 
-      sprintf(cmd,":SOUR:LEV %.5lf",lvl);
+      sprintf(cmd,":SOUR:LEV %.5E",lvl);
       int rc = write(cmd); 
       delete cmd;
       return rc; 
@@ -218,7 +218,7 @@ namespace yokogawa_interface {
    //___________________________________________________________________________
    int open_connection(const char *ip_addr){
       sprintf(DeviceIP,ip_addr); 
-      if (clink==NULL)clink = new CLINK;
+      if (clink==NULL) clink = new CLINK;
       printf("Attempting to open the connection to IP address %s... \n",ip_addr); 
       int rc = vxi11_open_device(DeviceIP,clink);
       printf("Returning... \n"); 

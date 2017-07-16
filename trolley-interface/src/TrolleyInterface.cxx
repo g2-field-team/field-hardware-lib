@@ -968,42 +968,188 @@ namespace TrolleyInterface{
 
   void RegInit (void)
   {
-    // NOTE: All comments about default values, read masks, and write masks are current as of 2/11/2014
+	  // NOTE: All comments about default values, read masks, and write masks are current as of 2/11/2014
 
-    // Registers in the Zynq ARM		Address				Address		Default Value	Read Mask		Write Mask		Code Name
-    trolleyReg.comm_arm_fw_build = 0x00000010;
-    trolleyReg.IP4Address	 = 0x00000100;
-    trolleyReg.IP4Netmask	 = 0x00000104;
-    trolleyReg.IP4Gateway	 = 0x00000108;
-    trolleyReg.MACAddressLSB	 = 0x00000110;
-    trolleyReg.MACAddressMSB	 = 0x00000114;
-    trolleyReg.EthernetReset	 = 0x00000180;
-    trolleyReg.RestoreSelect	 = 0x00000200;
-    trolleyReg.Restore		 = 0x00000204;
-    trolleyReg.PurgeDDR		 = 0x00000300;
-    trolleyReg.TCPSendBlockSize	 = 0x00000400;
+	  // Registers in the Zynq ARM		Address				Address		Default Value	Read Mask		Write Mask		Code Name
+	  trolleyReg.comm_arm_fw_build = 0x00000010;
+	  trolleyReg.IP4Address	 = 0x00000100;
+	  trolleyReg.IP4Netmask	 = 0x00000104;
+	  trolleyReg.IP4Gateway	 = 0x00000108;
+	  trolleyReg.MACAddressLSB	 = 0x00000110;
+	  trolleyReg.MACAddressMSB	 = 0x00000114;
+	  trolleyReg.EthernetReset	 = 0x00000180;
+	  trolleyReg.RestoreSelect	 = 0x00000200;
+	  trolleyReg.Restore		 = 0x00000204;
+	  trolleyReg.PurgeDDR		 = 0x00000300;
+	  trolleyReg.TCPSendBlockSize	 = 0x00000400;
 
 
-    // Registers in the Zynq FPGA		Address				Address		Default Value	Read Mask		Write Mask		VHDL Name
-    trolleyReg.comm_fpga_fw_build 	= 0x40000010;   //	X"010",		X"00000001",	X"FFFFFFFF",	X"00000000",
-    trolleyReg.eventDataInterfaceSelect	= 0x40000020;	//	X"020",		X"00000000",	X"00000001",	X"00000001",	 
-    trolleyReg.eventDataControl		= 0x40000144;	//	X"144",		X"0020001F",	X"FFFFFFFF",	X"0033001F",	reg_event_data_control
-    trolleyReg.eventDataStatus		= 0x40000190;	//	X"190",		X"00000000",	X"FFFFFFFF",	X"00000000",	regin_event_data_status
+	  // Registers in the Zynq FPGA		Address				Address		Default Value	Read Mask		Write Mask		VHDL Name
+	  trolleyReg.comm_fpga_fw_build 	= 0x40000010;   //	X"010",		X"00000001",	X"FFFFFFFF",	X"00000000",
+	  trolleyReg.eventDataInterfaceSelect	= 0x40000020;	//	X"020",		X"00000000",	X"00000001",	X"00000001",	 
+	  trolleyReg.eventDataControl		= 0x40000144;	//	X"144",		X"0020001F",	X"FFFFFFFF",	X"0033001F",	reg_event_data_control
+	  trolleyReg.eventDataStatus		= 0x40000190;	//	X"190",		X"00000000",	X"FFFFFFFF",	X"00000000",	regin_event_data_status
 
   }
 
   int DeviceLoadNMRSetting (NMR_Config NMR_Setting)
   {
-    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_Command);
-    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_Preamp_Delay);
-    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_Preamp_Period);
-    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_ADC_Gate_Delay);
-    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_ADC_Gate_Offset);
-    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_ADC_Gate_Period);
-    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_TX_Delay);
-    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_TX_Period);
-    DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.User_Defined_Data);
-    return 0;
+	  DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_Command);
+	  DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_Preamp_Delay);
+	  DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_Preamp_Period);
+	  DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_ADC_Gate_Delay);
+	  DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_ADC_Gate_Offset);
+	  DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_ADC_Gate_Period);
+	  DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_TX_Delay);
+	  DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.NMR_TX_Period);
+	  DeviceWrite(fifo_out_nmr_seq_data, NMR_Setting.User_Defined_Data);
+	  return 0;
+  }
+
+  int DeviceNVWrite (unsigned int address, unsigned int value)
+  {
+	  int 		error = 0;
+	  Ctrl_Packet	rx;
+	  Ctrl_Packet	tx;
+	  int			rxSizeExpected = 0;
+
+	  // Prevent writes to Trolley Interface Firmware (for now).
+	  if (address & 0xF0000000 != 0x20000000) return statusAddressError;
+
+	  tx.header.length	= sizeof(Ctrl_Header) + sizeof(unsigned int);
+	  tx.header.address	= address;
+	  tx.header.command	= cmdNVWrite;
+	  tx.header.size		= 1;
+	  tx.header.status	= statusNoError;
+	  tx.data[0]			= value;
+	  rxSizeExpected		= sizeof(Ctrl_Header);
+
+	  error = SendReceive(&tx, &rx);
+	  if (error == 0) {
+		  if(tx.header.address != rx.header.address)
+		  {
+			  error = errorCommSend;
+		  }
+	  }
+
+	  return error;
+  }
+
+  int DeviceNVArrayWrite (unsigned int address, unsigned int size, unsigned int* data)
+  {
+	  int 		i = 0;
+	  int 		error = 0;
+	  Ctrl_Packet	rx;
+	  Ctrl_Packet	tx;
+	  int			rxSizeExpected = 0;
+
+	  // Prevent writes to Trolley Interface Firmware (for now).
+	  if (address & 0xF0000000 != 0x20000000) return statusAddressError;
+
+	  tx.header.length	= sizeof(Ctrl_Header) + (sizeof(unsigned int) * size);
+	  tx.header.address	= address;
+	  tx.header.command	= cmdNVArrayWrite;
+	  tx.header.size		= size;
+	  tx.header.status	= statusNoError;
+	  rxSizeExpected		= sizeof(Ctrl_Header);
+
+	  for (i = 0; i < size; i++) {
+		  tx.data[i] = data[i];
+	  }
+
+	  error = SendReceive(&tx, &rx);
+	  if (error == 0) {
+		  if(tx.header.address != rx.header.address)
+		  {
+			  error = errorCommSend;
+		  }
+	  }
+
+	  return error;
+  }
+
+  int DeviceNVEraseSector (unsigned int address)
+  {
+	  int 		error = 0;
+	  Ctrl_Packet	rx;
+	  Ctrl_Packet	tx;
+	  int			rxSizeExpected = 0;
+
+	  // Prevent writes to Trolley Interface Firmware (for now).
+	  if (address & 0xF0000000 != 0x20000000) return statusAddressError;
+
+	  tx.header.length	= sizeof(Ctrl_Header);
+	  tx.header.address	= address;
+	  tx.header.command	= cmdNVEraseSector;
+	  tx.header.size		= 0;
+	  tx.header.status	= statusNoError;
+	  rxSizeExpected		= sizeof(Ctrl_Header);
+
+	  error = SendReceive(&tx, &rx);
+	  if (error == 0) {
+		  if(tx.header.address != rx.header.address)
+		  {
+			  error = errorCommSend;
+		  }
+	  }
+
+	  return error;
+  }
+
+  int DeviceNVEraseBlock (unsigned int address)
+  {
+	  int 		error = 0;
+	  Ctrl_Packet	rx;
+	  Ctrl_Packet	tx;
+	  int			rxSizeExpected = 0;
+
+	  // Prevent writes to Trolley Interface Firmware (for now).
+	  if (address & 0xF0000000 != 0x20000000) return statusAddressError;
+
+	  tx.header.length	= sizeof(Ctrl_Header);
+	  tx.header.address	= address;
+	  tx.header.command	= cmdNVEraseBlock;
+	  tx.header.size		= 0;
+	  tx.header.status	= statusNoError;
+	  rxSizeExpected		= sizeof(Ctrl_Header);
+
+	  error = SendReceive(&tx, &rx);
+	  if (error == 0) {
+		  if(tx.header.address != rx.header.address)
+		  {
+			  error = errorCommSend;
+		  }
+	  }
+
+	  return error;
+  }
+
+  int DeviceNVEraseChip (unsigned int address)
+  {
+	  int 		error = 0;
+	  Ctrl_Packet	rx;
+	  Ctrl_Packet	tx;
+	  int			rxSizeExpected = 0;
+
+	  // Prevent writes to Trolley Interface Firmware (for now).
+	  if (address & 0xF0000000 != 0x20000000) return statusAddressError;
+
+	  tx.header.length	= sizeof(Ctrl_Header);
+	  tx.header.address	= address;
+	  tx.header.command	= cmdNVEraseChip;
+	  tx.header.size		= 0;
+	  tx.header.status	= statusNoError;
+	  rxSizeExpected		= sizeof(Ctrl_Header);
+
+	  error = SendReceive(&tx, &rx);
+	  if (error == 0) {
+		  if(tx.header.address != rx.header.address)
+		  {
+			  error = errorCommSend;
+		  }
+	  }
+
+	  return error;
   }
 
 }//End namespace Trolley Interface
